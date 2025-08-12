@@ -14,24 +14,23 @@ pub async fn find_or_create_user(
     db_wrapper: &DBPoolWrapper,
     user_info: GoogleUserInfo,
 ) -> Result<User, sqlx::Error> {
-    // First, try to find the user by their Google ID.
+    // Check if user exists
     let existing_user = sqlx::query_as!(
         User,
-        "SELECT id, google_id, email, full_name, reputation, created_at FROM users WHERE google_id = $1",
+        "SELECT * FROM users WHERE google_id = $1",
         user_info.google_id
     )
         .fetch_optional(db_wrapper.pool())
         .await?;
 
-    // If the user exists, return it.
     if let Some(user) = existing_user {
         return Ok(user);
     }
 
-    // If the user does not exist, create a new record.
+    // If not, create a new user
     let new_user = sqlx::query_as!(
         User,
-        "INSERT INTO users (google_id, email, full_name) VALUES ($1, $2, $3) RETURNING id, google_id, email, full_name, reputation, created_at",
+        "INSERT INTO users (google_id, email, full_name) VALUES ($1, $2, $3) RETURNING *",
         user_info.google_id,
         user_info.email,
         user_info.full_name

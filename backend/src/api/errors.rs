@@ -20,6 +20,7 @@ impl IntoResponse for AppError {
 pub enum UserError {
     Conflict(String, sqlx::Error),
     Unknown(String, sqlx::Error),
+    Reqwest(String, reqwest::Error),
 }
 
 impl From<UserError> for AppError {
@@ -37,6 +38,10 @@ impl IntoResponse for UserError {
             }
             UserError::Unknown(msg, err) => {
                 tracing::error!("Unknown user error: {}", err);
+                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
+            }
+            UserError::Reqwest(msg, err) => {
+                tracing::error!("Reqwest error: {}, {}", msg, err);
                 (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
             }
         }
