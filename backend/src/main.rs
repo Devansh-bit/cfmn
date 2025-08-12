@@ -21,7 +21,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    // Create the Axum app with the database pool as state
     let app = api::router::create_router(db_wrapper).layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));

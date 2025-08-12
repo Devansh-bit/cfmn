@@ -14,9 +14,9 @@ pub fn create_router(db_wrapper: DBPoolWrapper) -> Router {
     let api_router = Router::new()
         .route("/", get(handlers::misc::index))
         .route("/search", get(handlers::notes::search_notes))
-        // Add User routes
-        .route("/users/register", post(handlers::users::register))
-        // Add Note routes
+        // Auth routes
+        .route("/auth/google", post(handlers::auth::google_auth_callback))
+        // Note routes
         .route("/notes", get(handlers::notes::list_notes))
         .route("/notes/upload", post(handlers::notes::upload_note));
 

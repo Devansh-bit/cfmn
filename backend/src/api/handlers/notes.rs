@@ -5,11 +5,10 @@ use axum::extract::{multipart::Multipart, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use std::path::Path;
 use serde::Deserialize;
+use std::path::Path;
 use tokio::fs;
 use uuid::Uuid;
-use crate::api::errors::AppError::Note;
 
 /// API handler to list all notes.
 pub async fn list_notes(
@@ -31,6 +30,7 @@ pub async fn search_notes(
     State(state): State<RouterState>,
     Query(query): Query<SearchQuery>,
 ) -> Result<(StatusCode, Response), AppError> {
+    tracing::debug!("Search query: {:?}", query.query);
     if query.query.is_empty() {
         return Err(
             NoteError::InvalidData("Query cannot be empty".to_string()).into(),
@@ -140,7 +140,7 @@ pub async fn upload_note(
 
     match create_note(&state.db_wrapper, new_note).await {
         Ok(note) => Ok((StatusCode::OK, Json(note).into_response())),
-        Err(err) => {
+        Err(_err) => {
             Err(NoteError::UploadFailed("Failed to create note".to_string()).into())
         }
     }

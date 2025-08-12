@@ -1,8 +1,6 @@
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
 
-pub type DBPool = Pool<Postgres>;
-
 #[derive(Clone)]
 pub struct DBPoolWrapper {
     pool: Pool<Postgres>,
