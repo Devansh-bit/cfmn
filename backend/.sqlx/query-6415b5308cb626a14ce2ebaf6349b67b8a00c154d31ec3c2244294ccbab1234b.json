@@ -1,0 +1,80 @@
+  {
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM notes",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "professor_names",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 4,
+        "name": "course_names",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "tags",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_public",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "is_archived",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "file_path",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "uploader_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6415b5308cb626a14ce2ebaf6349b67b8a00c154d31ec3c2244294ccbab1234b"
+}

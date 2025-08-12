@@ -1,25 +1,19 @@
-use serde::Deserialize;
+use crate::db::db::DBPoolWrapper;
+use crate::db::DBError;
 use crate::db::models::User;
-use crate::db::DBPoolWrapper;
-use crate::db::errors::DBError;
 
+const FAKE_PASSWORD_HASH: &str = "will_be_replaced_by_google_oauth";
 
-
-
-pub async fn register_user(
-    user: User,
-    pool: DBPoolWrapper,
-) -> Result<User, DBError> {
-    let result = sqlx::query_as!(User,
+/// Creates a new user in the database with a placeholder password.
+/// This is a temporary setup until Google OAuth is implemented.
+pub async fn create_user(db_wrapper: &DBPoolWrapper, username: String) -> Result<User, DBError> {
+    let user = sqlx::query_as!(
+        User,
         "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING *",
-        user.username,
-        user.password_hash
-    ).fetch_one(pool.pool()).await;
-    match result {
-        Ok(user) => Ok(user),
-        Err(err) => {
-            tracing::error!("Failed to register user: {}", err);
-            Err(DBError::from(err))
-        }
-    }
+        username,
+        FAKE_PASSWORD_HASH
+    )
+        .fetch_one(db_wrapper.pool())
+        .await?;
+    Ok(user)
 }
