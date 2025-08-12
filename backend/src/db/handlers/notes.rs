@@ -1,9 +1,7 @@
-// backend/src/db/handlers/notes.rs
 use crate::db::db::DBPoolWrapper;
 use crate::db::models::Note;
 use serde::Deserialize;
 use uuid::Uuid;
-use crate::db::DBError;
 
 #[derive(Deserialize)]
 pub struct CreateNote {
@@ -20,7 +18,7 @@ pub struct CreateNote {
 pub async fn create_note(
     db_wrapper: &DBPoolWrapper,
     new_note: CreateNote,
-) -> Result<Note, DBError> {
+) -> Result<Note, sqlx::Error> {
     let note = sqlx::query_as!(
         Note,
         r#"
@@ -42,10 +40,30 @@ pub async fn create_note(
 }
 
 /// Fetches all note records from the database.
-pub async fn get_all_notes(db_wrapper: &DBPoolWrapper) -> Result<Vec<Note>, DBError> {
+pub async fn get_all_notes(db_wrapper: &DBPoolWrapper) -> Result<Vec<Note>, sqlx::Error> {
     let notes = sqlx::query_as!(
         Note,
         "SELECT id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at FROM notes"
+    )
+        .fetch_all(db_wrapper.pool())
+        .await?;
+    Ok(notes)
+}
+
+/// Searches for notes where the title or description match the query.
+pub async fn search_notes_by_query(
+    db_wrapper: &DBPoolWrapper,
+    query: &str,
+) -> Result<Vec<Note>, sqlx::Error> {
+    let search_term = format!("%{}%", query); // Wrap query for partial matching
+    let notes = sqlx::query_as!(
+        Note,
+        r#"
+        SELECT id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at
+        FROM notes
+        WHERE title ILIKE $1 OR description ILIKE $1
+        "#,
+        search_term
     )
         .fetch_all(db_wrapper.pool())
         .await?;

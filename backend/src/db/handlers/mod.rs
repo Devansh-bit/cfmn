@@ -1,2 +1,2 @@
-mod users;
-mod notes;
+pub(crate) mod users;
+pub(crate) mod notes;
