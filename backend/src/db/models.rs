@@ -26,3 +26,11 @@ pub struct Note {
     pub uploader_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
+#[derive(Serialize, Deserialize, Debug, sqlx::FromRow)]
+pub struct Vote {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub note_id: Uuid,
+    pub vote_type: String,
+    pub created_at: DateTime<Utc>,
+}

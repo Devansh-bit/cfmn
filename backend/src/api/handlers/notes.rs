@@ -16,7 +16,7 @@ pub async fn list_notes(
 ) -> Result<(StatusCode, Response), AppError> {
     match get_all_notes(&state.db_wrapper).await {
         Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
-        Err(err) => Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err).into()),
+        Err(err) => Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err.into()).into()),
     }
 }
 
@@ -40,7 +40,7 @@ pub async fn search_notes(
     match search_notes_by_query(&state.db_wrapper, &query.query).await {
         Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
         Err(err) => {
-            Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err).into())
+            Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err.into()).into())
         }
     }
 }

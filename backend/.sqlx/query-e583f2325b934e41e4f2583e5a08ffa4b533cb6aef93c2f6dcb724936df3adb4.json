@@ -1,6 +1,6 @@
-  {
+{
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM notes",
+  "query": "SELECT id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at FROM notes",
   "describe": {
     "columns": [
       {
@@ -76,5 +76,5 @@
       false
     ]
   },
-  "hash": "6415b5308cb626a14ce2ebaf6349b67b8a00c154d31ec3c2244294ccbab1234b"
+  "hash": "e583f2325b934e41e4f2583e5a08ffa4b533cb6aef93c2f6dcb724936df3adb4"
 }

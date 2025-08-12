@@ -13,7 +13,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       # This script will run on initialization from the /database directory
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
+    restart: always
 
 volumes:
   postgres-data:

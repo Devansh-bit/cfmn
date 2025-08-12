@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING *",
+  "query": "SELECT * FROM users WHERE google_id = $1",
   "describe": {
     "columns": [
       {
@@ -10,29 +10,33 @@
       },
       {
         "ordinal": 1,
-        "name": "username",
+        "name": "google_id",
         "type_info": "Varchar"
       },
       {
         "ordinal": 2,
-        "name": "password_hash",
+        "name": "email",
         "type_info": "Varchar"
       },
       {
         "ordinal": 3,
+        "name": "full_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
         "name": "reputation",
         "type_info": "Int4"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Varchar"
+        "Text"
       ]
     },
     "nullable": [
@@ -40,8 +44,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "410f49d7d32ce0626ca04e53ebc66d0b97bfe3485be1747cc0921f4e867798d1"
+  "hash": "7b0389d38dfc559a58fe2e9a6daba8c0fd6a7549c95fddf79fa63107afda088b"
 }

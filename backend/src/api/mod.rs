@@ -1,3 +1,3 @@
 mod handlers;
 pub(crate) mod router;
-mod errors;
+pub(crate) mod errors;

@@ -2,3 +2,4 @@
 pub mod misc;
 pub mod notes;
 pub mod auth;
+mod votes;

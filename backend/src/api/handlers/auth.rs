@@ -23,7 +23,6 @@ struct GoogleClaims {
     sub: String, // This is the Google ID
 }
 
-// Structs to represent the JSON Web Key Set (JWKS) from Google
 #[derive(Debug, Deserialize)]
 struct Jwks {
     keys: Vec<Jwk>,
@@ -42,24 +41,23 @@ async fn get_google_public_keys() -> Result<HashMap<String, DecodingKey>, AppErr
     let response = reqwest::get("https://www.googleapis.com/oauth2/v3/certs")
         .await
         .map_err(|e| {
-            AppError::User(crate::api::errors::UserError::Reqwest(
+            crate::api::errors::AuthError::RequestError(
                 "Failed to fetch Google public keys".to_string(),
                 e.into(),
-            ))
+            )
         })?;
 
     if !response.status().is_success() {
-        return Err(AppError::User(crate::api::errors::UserError::Unknown(
+        return Err(AppError::Auth(crate::api::errors::AuthError::BadResponse(
             "Failed to fetch Google public keys".to_string(),
-            sqlx::Error::Configuration("Request to Google was not successful".into()),
         )));
     }
 
     let jwks: Jwks = response.json().await.map_err(|e| {
-        AppError::User(crate::api::errors::UserError::Reqwest(
+        crate::api::errors::AuthError::RequestError(
             "Failed to parse Google public keys".to_string(),
             e.into(),
-        ))
+        )
     })?;
 
     let mut decoding_keys = HashMap::new();
@@ -69,7 +67,7 @@ async fn get_google_public_keys() -> Result<HashMap<String, DecodingKey>, AppErr
             DecodingKey::from_rsa_components(&jwk.n, &jwk.e).map_err(|e| {
                 AppError::User(crate::api::errors::UserError::Unknown(
                     "Failed to create decoding key".to_string(),
-                    sqlx::Error::Tls(e.into()),
+                    e.into(),
                 ))
             })?,
         );
@@ -81,33 +79,30 @@ pub async fn google_auth_callback(
     State(state): State<RouterState>,
     Json(payload): Json<AuthRequest>,
 ) -> Result<(StatusCode, Response), AppError> {
-    let header = decode_header(&payload.token).map_err(|_| {
-        AppError::User(crate::api::errors::UserError::Unknown(
+    let header = decode_header(&payload.token).map_err(|e| {
+        AppError::Auth(crate::api::errors::AuthError::RequestError(
             "Invalid token header".to_string(),
-            sqlx::Error::Configuration("Invalid token header".into()),
+            e.into(),
         ))
     })?;
 
     let kid = header.kid.ok_or_else(|| {
-        AppError::User(crate::api::errors::UserError::Unknown(
+        AppError::Auth(crate::api::errors::AuthError::BadResponse(
             "Missing 'kid' in token header".to_string(),
-            sqlx::Error::Configuration("Missing 'kid' in token header".into()),
         ))
     })?;
 
     let public_keys = get_google_public_keys().await?;
     let decoding_key = public_keys.get(&kid).ok_or_else(|| {
-        AppError::User(crate::api::errors::UserError::Unknown(
+        AppError::Auth(crate::api::errors::AuthError::BadResponse(
             "No matching public key found for 'kid'".to_string(),
-            sqlx::Error::Configuration("No matching public key found for 'kid'".into()),
         ))
     })?;
 
     let google_client_id = std::env::var("GOOGLE_CLIENT_ID")
         .map_err(|_| {
-            AppError::User(crate::api::errors::UserError::Unknown(
+            AppError::Auth(crate::api::errors::AuthError::ConfigError(
                 "GOOGLE_CLIENT_ID not set".to_string(),
-                sqlx::Error::Configuration("GOOGLE_CLIENT_ID not set".into()),
             ))
         })?;
 
@@ -116,9 +111,9 @@ pub async fn google_auth_callback(
 
     let token_data = decode::<GoogleClaims>(&payload.token, decoding_key, &validation).map_err(|e| {
         tracing::error!("Token validation error: {}", e);
-        AppError::User(crate::api::errors::UserError::Unknown(
+        AppError::Auth(crate::api::errors::AuthError::TokenError(
             "Token validation failed".to_string(),
-            sqlx::Error::Tls(e.into()),
+            e.into(),
         ))
     })?;
 
@@ -136,12 +131,12 @@ pub async fn google_auth_callback(
             sqlx::Error::Database(err) if err.constraint() == Some("users_google_id_key") => {
                 AppError::User(crate::api::errors::UserError::Conflict(
                     "User with this Google ID already exists".to_string(),
-                    sqlx::Error::Database(err),
+                    err.into(),
                 ))
             }
             e => AppError::User(crate::api::errors::UserError::Unknown(
                 "Failed to find or create user".to_string(),
-                e,
+                e.into(),
             )),
         })?;
 
