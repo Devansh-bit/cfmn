@@ -9,7 +9,7 @@ use std::path::Path;
 use serde::Deserialize;
 use tokio::fs;
 use uuid::Uuid;
-use crate::api::errors::AppError::NoteErr;
+use crate::api::errors::AppError::Note;
 
 /// API handler to list all notes.
 pub async fn list_notes(
@@ -17,7 +17,7 @@ pub async fn list_notes(
 ) -> Result<(StatusCode, Response), AppError> {
     match get_all_notes(&state.db_wrapper).await {
         Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
-        Err(err) => Err(NoteError::Unknown("Failed to fetch notes".to_string(), err).into()),
+        Err(err) => Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err).into()),
     }
 }
 
@@ -33,14 +33,14 @@ pub async fn search_notes(
 ) -> Result<(StatusCode, Response), AppError> {
     if query.query.is_empty() {
         return Err(
-            NoteError::InvalidQuery("Query cannot be empty".to_string()).into(),
+            NoteError::InvalidData("Query cannot be empty".to_string()).into(),
         );
     }
 
     match search_notes_by_query(&state.db_wrapper, &query.query).await {
         Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
         Err(err) => {
-            Err(NoteError::Unknown("Failed to fetch notes".to_string(), err).into())
+            Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err).into())
         }
     }
 }
@@ -64,7 +64,7 @@ pub async fn upload_note(
     if !upload_dir.exists() {
         fs::create_dir_all(upload_dir)
             .await
-            .map_err(|e| NoteError::DirectoryError("Failed to create upload dir".to_string(), e))?;
+            .map_err(|_| NoteError::UploadFailed("Failed to create upload dir".to_string()))?;
     }
 
     while let Ok(Some(field)) = multipart.next_field().await {
@@ -86,19 +86,19 @@ pub async fn upload_note(
             let data = field
                 .bytes()
                 .await
-                .map_err(|_| NoteError::FileError("Failed to read file bytes".to_string()))?;
+                .map_err(|_| NoteError::UploadFailed("Failed to read file bytes".to_string()))?;
 
             if fs::write(&path, &data).await.is_ok() {
                 file_path = Some(path.to_str().unwrap().to_string());
             } else {
-                Err(NoteError::FileError("Failed to save file".to_string()))?;
+                Err(NoteError::UploadFailed("Failed to save file".to_string()))?;
             }
             continue; // Move to the next field
         }
 
         // For all other text-based fields
         let data = field.text().await.map_err(|_| {
-            NoteError::FileError(format!("Invalid format for field: {}", name))
+            NoteError::UploadFailed(format!("Invalid format for field: {}", name))
         })?;
 
         match name.as_str() {
@@ -118,15 +118,15 @@ pub async fn upload_note(
     }
 
     if title.is_empty() {
-        return Err(NoteError::InvalidQuery("Title is required".to_string()))?;
+        return Err(NoteError::InvalidData("Title is required".to_string()))?;
     }
 
     let uploader_id = Uuid::parse_str(&uploader_id_str).map_err(|_| {
-        NoteError::InvalidQuery("Invalid or missing uploader_id".to_string())
+        NoteError::InvalidData("Invalid or missing uploader_id".to_string())
     })?;
 
     let final_file_path =
-        file_path.ok_or(NoteError::InvalidQuery("File not provided".to_string()))?;
+        file_path.ok_or(NoteError::InvalidData("File not provided".to_string()))?;
 
     let new_note = CreateNote {
         title,
@@ -141,7 +141,7 @@ pub async fn upload_note(
     match create_note(&state.db_wrapper, new_note).await {
         Ok(note) => Ok((StatusCode::OK, Json(note).into_response())),
         Err(err) => {
-            Err(NoteError::Unknown("Failed to create note".to_string(), err).into())
+            Err(NoteError::UploadFailed("Failed to create note".to_string()).into())
         }
     }
 }

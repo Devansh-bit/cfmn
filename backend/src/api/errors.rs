@@ -1,16 +1,18 @@
 use axum::http::StatusCode;
+use axum::Json;
 use axum::response::{IntoResponse, Response};
+use serde_json::json;
 
 pub enum AppError {
-    NoteErr(NoteError),
-    UserErr(UserError),
+    Note(NoteError),
+    User(UserError),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            AppError::NoteErr(err) => err.into_response(),
-            AppError::UserErr(err) => err.into_response(),
+            AppError::Note(err) => err.into_response(),
+            AppError::User(err) => err.into_response(),
         }
     }
 }
@@ -22,7 +24,7 @@ pub enum UserError {
 
 impl From<UserError> for AppError {
     fn from(err: UserError) -> Self {
-        AppError::UserErr(err)
+        AppError::User(err)
     }
 }
 
@@ -41,43 +43,33 @@ impl IntoResponse for UserError {
     }
 }
 
+#[derive(Debug)]
 pub enum NoteError {
-    NotFound(String, sqlx::Error),
-    InvalidQuery(String),
-    DirectoryError(String, std::io::Error),
-    Unknown(String, sqlx::Error),
-    FileError(String),
+    InvalidData(String),
+    UploadFailed(String),
+    DatabaseError(String, sqlx::Error),
 }
 
 impl From<NoteError> for AppError {
     fn from(err: NoteError) -> Self {
-        AppError::NoteErr(err)
+        AppError::Note(err)
     }
 }
 
 impl IntoResponse for NoteError {
     fn into_response(self) -> Response {
-        match self {
-            NoteError::NotFound(msg, err) => {
-                tracing::error!("Not Found {}", err);
-                (StatusCode::NOT_FOUND, msg).into_response()
+        let (status, error_message) = match self {
+            NoteError::InvalidData(msg) => (StatusCode::BAD_REQUEST, msg),
+            NoteError::UploadFailed(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+            NoteError::DatabaseError(msg, err) => {
+                tracing::error!("Database error: {:?}", err);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    msg,
+                )
             }
-            NoteError::InvalidQuery(msg) => {
-                tracing::error!("Invalid Query {}", msg);
-                (StatusCode::BAD_REQUEST, msg).into_response()
-            }
-            NoteError::Unknown(msg, err) => {
-                tracing::error!("Unknown search error: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
-            }
-            NoteError::DirectoryError(msg, err) => {
-                tracing::error!("Directory error: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
-            }
-            NoteError::FileError(msg) => {
-                tracing::error!("File error: {}", msg);
-                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
-            }
-        }
+        };
+
+        (status, Json(json!({ "error": error_message }))).into_response()
     }
 }
