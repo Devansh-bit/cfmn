@@ -1,4 +1,6 @@
 mod api;
+mod db;
+
 use axum::{
     routing::get,
     Router,
