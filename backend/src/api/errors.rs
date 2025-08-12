@@ -1,37 +1,45 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use super::handlers::search::SearchError;
-
+use crate::db::DBError;
 
 pub enum AppError {
     Search(SearchError),
+    DB(DBError),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
             AppError::Search(err) => err.into_response(),
+            AppError::DB(err) => err.into_response(),
         }
     }
 }
 
-// pub struct AppError {
-//     message: String,
-//     code: u16,
-// }
-//
-// impl IntoResponse for AppError {
-//     fn into_response(self) -> Response {
-//         tracing::error!("An error occurred: {}", self.message);
-//         (
-//             StatusCode::INTERNAL_SERVER_ERROR,
-//             format!("Error {}: {}", self.code, "Something went terribly wrong. Please try again."),
-//         )
-//             .into_response()
-//     }
-// }
-//
-// pub struct SearchError {
-//     message: String,
-//     code: u16,
-// }
+impl From<SearchError> for AppError {
+    fn from(err: SearchError) -> Self {
+        AppError::Search(err)
+    }
+}
+
+impl From<DBError> for AppError {
+    fn from(err: DBError) -> Self {
+        AppError::DB(err)
+    }
+}
+
+
+
+pub enum SearchError {
+    NotFound(String),
+    InvalidQuery(String),
+}
+
+impl IntoResponse for SearchError {
+    fn into_response(self) -> Response {
+        match self {
+            SearchError::NotFound(msg) => {tracing::error!(msg); (StatusCode::NOT_FOUND, msg).into_response()},
+            SearchError::InvalidQuery(msg) => {tracing::error!(msg); (StatusCode::BAD_REQUEST, msg).into_response()},
+        }
+    }
+}

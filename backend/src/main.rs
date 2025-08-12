@@ -1,24 +1,34 @@
+// backend/src/main.rs
 mod api;
 mod db;
 
-use axum::{
-    routing::get,
-    Router,
-};
-
-use tracing_subscriber;
+use tower_http::cors::{Any, CorsLayer};
+use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load environment variables from .env file
+    dotenvy::dotenv().expect("Failed to read .env file");
 
-    let port = 3000;
     tracing_subscriber::fmt::init();
-    let app = api::router::create_router();
 
-    let listener =
-        tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    tracing::info!("Server is starting on port {}", port);
+    // Connect to the database
+    let db_wrapper = db::DBPoolWrapper::new().await;
+    tracing::info!("Database connection established.");
 
-    axum::serve(listener, app).await?;
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    // Create the Axum app with the database pool as state
+    let app = api::router::create_router(db_wrapper).layer(cors);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    tracing::info!("Server listening on {}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app.into_make_service()).await?;
+
     Ok(())
 }
