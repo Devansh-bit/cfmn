@@ -2,7 +2,7 @@ use crate::db::db::DBPoolWrapper;
 use crate::db::models::User;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct GoogleUserInfo {
     pub google_id: String,
     pub email: String,

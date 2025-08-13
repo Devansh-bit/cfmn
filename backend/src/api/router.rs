@@ -1,10 +1,9 @@
-// backend/src/api/router.rs
 use super::handlers;
-use crate::db::DBPoolWrapper;
-use axum::{routing::{get, post}, Router};
-use axum::middleware::from_fn_with_state;
-use crate::env::EnvVars;
 use crate::api::auth;
+use crate::db::DBPoolWrapper;
+use crate::env::EnvVars;
+use axum::middleware::from_fn_with_state;
+use axum::{routing::{get, post}, Router};
 
 #[derive(Clone)]
 pub(super) struct RouterState {
@@ -21,11 +20,11 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
     let protected_router = Router::new()
         .route("/notes/upload", post(handlers::notes::upload_note))
         .route(
-            "/notes/:note_id/upvote",
+            "/notes/{note_id}/upvote",
             post(handlers::votes::upvote_handler),
         )
         .route(
-            "/notes/:note_id/downvote",
+            "/notes/{note_id}/downvote",
             post(handlers::votes::downvote_handler),
         )
         .route_layer(from_fn_with_state(
@@ -37,8 +36,8 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/", get(handlers::misc::index))
         .route("/notes", get(handlers::notes::list_notes))
         .route("/notes/search", get(handlers::notes::search_notes))
-        //.route("/notes/:note_id", get(handlers::notes::download_note))
-        //.route("/auth/google", post(handlers::auth::google_auth_callback))
+        //.route("/notes/{note_id}", get(handlers::notes::download_note))
+        .route("/auth/google", post(handlers::auth::google_auth_callback))
     ;
 
     let api_router = Router::new().merge(public_router).merge(protected_router);

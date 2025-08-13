@@ -1,10 +1,15 @@
 use crate::api::errors::AppError;
 use crate::api::router::RouterState;
 use crate::db::handlers::votes::{downvote, upvote};
-use axum::{extract::{Path, State}, http::StatusCode, response::{IntoResponse, Response}, Extension, Json};
+use crate::db::models::User;
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Extension, Json,
+};
 use serde::Deserialize;
 use uuid::Uuid;
-use crate::db::models::User;
 
 #[derive(Deserialize)]
 pub struct VoteRequest {
@@ -20,10 +25,12 @@ pub async fn upvote_handler(
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => {
             tracing::error!("Failed to upvote note: {}", e);
-            Err(AppError::Note(crate::api::errors::NoteError::DatabaseError(
-                "Failed to upvote note".to_string(),
-                e.into(),
-            )))
+            Err(AppError::Note(
+                crate::api::errors::NoteError::DatabaseError(
+                    "Failed to upvote note".to_string(),
+                    e.into(),
+                ),
+            ))
         }
     }
 }
@@ -37,10 +44,12 @@ pub async fn downvote_handler(
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => {
             tracing::error!("Failed to downvote note: {}", e);
-            Err(AppError::Note(crate::api::errors::NoteError::DatabaseError(
-                "Failed to downvote note".to_string(),
-                e.into(),
-            )))
+            Err(AppError::Note(
+                crate::api::errors::NoteError::DatabaseError(
+                    "Failed to downvote note".to_string(),
+                    e.into(),
+                ),
+            ))
         }
     }
 }

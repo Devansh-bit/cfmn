@@ -11,4 +11,6 @@ pub struct EnvVars {
     pub google_client_secret: String,
     #[arg(env)]
     pub signing_secret: String,
+    #[arg(env)]
+    pub expiration_time_seconds: i64,
 }

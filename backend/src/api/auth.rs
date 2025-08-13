@@ -1,49 +1,51 @@
+// backend/src/api/auth.rs
+
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use crate::api::router::RouterState;
-use axum_extra::extract::cookie::CookieJar;
+use axum_extra::extract::cookie::{Cookie, CookieJar};
 use hmac::{Hmac, Mac};
-use jwt::VerifyWithKey;
+use jwt::{SignWithKey, VerifyWithKey};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::collections::BTreeMap;
 use axum::body::Body;
+use axum::{debug_handler, Json};
+use jsonwebtoken::{decode, DecodingKey, Validation};
 use crate::api::errors;
-use crate::api::errors::AppError;
+use crate::api::errors::{AppError, AuthError};
 use crate::db;
+use crate::db::handlers::users::GoogleUserInfo;
 use crate::db::models::User;
+use serde_json::json;
 
-async fn verify_token(token: &String, state: &RouterState) -> Result<Option<User>, AppError> {
-    let key: Hmac<Sha256> =
-        Hmac::new_from_slice(state.env_vars.signing_secret.as_bytes()).unwrap();
-    let claims: BTreeMap<String, String> = token.verify_with_key(&key).map_err(|_| {
-        errors::AuthError::InvalidToken("Invalid JWT token".to_string())
-    })?;
-    let google_id = claims.get("google_id").unwrap();
-    let access_token = claims.get("access_token").unwrap();
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AppClaims {
+    pub(crate) google_id: String,
+    pub(crate) exp: i64,
+}
 
-    let auth_test_url = format!("https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={}", access_token);
-    let req = Client::new()
-        .get(auth_test_url)
-        .build().map_err(|e| {
-        errors::AuthError::ConfigError("Failed to build auth request".to_string())
-    })?;
-    let response = Client::new().execute(req).await.map_err(|e| {
-        errors::AuthError::RequestError("Auth request failed".to_string(), e.into())
-    })?;
+pub async fn verify_token(token: &str, state: &RouterState) -> Result<Option<User>, AppError> {
+    let decoding_key = DecodingKey::from_secret(state.env_vars.signing_secret.as_bytes());
 
-    if response.status() != StatusCode::OK {
-        return Ok(None);
-    }
+    let validation = Validation::new(jsonwebtoken::Algorithm::HS256);
 
-    let user = db::handlers::users::find_user_by_google_id(&state.db_wrapper, google_id).await.map_err(|e| {;
-        errors::AuthError::DatabaseError("Failed to fetch user from database".to_string(), e.into())
-    })?;
+    let token_data = decode::<AppClaims>(token, &decoding_key, &validation)
+        .map_err(|_| AuthError::InvalidToken("Invalid or expired session token".to_string()))?;
+
+    let claims = token_data.claims;
+
+    let user = db::handlers::users::find_user_by_google_id(&state.db_wrapper, &claims.google_id)
+        .await
+        .map_err(|e| AuthError::DatabaseError("Failed to fetch user".to_string(), e.into()))?;
 
     Ok(user)
 }
+
+
 pub(crate) async fn verify_token_middleware(
     State(state): State<RouterState>,
     jar: CookieJar,
