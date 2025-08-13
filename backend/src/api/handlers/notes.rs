@@ -1,15 +1,20 @@
 use crate::api::errors::{AppError, NoteError};
 use crate::api::router::RouterState;
-use crate::db::handlers::notes::{create_note, get_all_notes, search_notes_by_query, CreateNote};
+use crate::db::handlers::notes::{create_note, get_all_notes, search_notes_by_query, get_note_by_id};
 use axum::extract::{multipart::Multipart, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use serde::Deserialize;
 use std::path::Path;
+use axum::body::Bytes;
+use chrono::Utc;
 use tokio::fs;
 use uuid::Uuid;
+use crate::api::models::CreateNote;
 use crate::db::models::User;
+
+
 
 /// API handler to list all notes.
 pub async fn list_notes(
@@ -46,28 +51,19 @@ pub async fn search_notes(
     }
 }
 
-/// API handler for uploading a new note.
-/// Expects a multipart form with fields: 'title', 'description', 'uploader_id', and 'file'.
-/// Array fields like 'tags' should be comma-separated strings.
 pub async fn upload_note(
     State(state): State<RouterState>,
     Extension(user): Extension<User>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Response), AppError> {
-    let mut title = String::new();
+    let mut course_name = String::new();
+    let mut course_code = String::new();
     let mut description: Option<String> = None;
     let mut professor_names: Option<Vec<String>> = None;
-    let mut course_names: Option<Vec<String>> = None;
-    let mut tags: Option<Vec<String>> = None;
-    let mut file_path: Option<String> = None;
-
-    let upload_dir = Path::new("uploads");
-    if !upload_dir.exists() {
-        fs::create_dir_all(upload_dir)
-            .await
-            .map_err(|_| NoteError::UploadFailed("Failed to create upload dir".to_string()))?;
-    }
-
+    let mut tags: Vec<String> = Vec::new();
+    let mut file_data: Option<Bytes> = None;
+    let FILE_SIZE_LIMIT = state.env_vars.file_size_limit;
+    // Parse multipart form data
     while let Ok(Some(field)) = multipart.next_field().await {
         let name = match field.name() {
             Some(name) => name.to_string(),
@@ -75,70 +71,121 @@ pub async fn upload_note(
         };
 
         if name == "file" {
-            let original_filename = field.file_name().unwrap_or("unknown_file").to_string();
-            let extension = Path::new(&original_filename)
-                .extension()
-                .and_then(std::ffi::OsStr::to_str)
-                .unwrap_or("");
-
-            let new_filename = format!("{}.{}", Uuid::new_v4(), extension);
-            let path = upload_dir.join(&new_filename);
+            // Validate content type - only accept PDFs
+            if let Some(content_type) = field.content_type() {
+                if content_type != "application/pdf" {
+                    return Err(NoteError::InvalidData("Only PDF files are supported".to_string()))?;
+                }
+            } else {
+                return Err(NoteError::InvalidData("Content-type header not found. File type could not be determined".to_string()))?;
+            }
 
             let data = field
                 .bytes()
                 .await
                 .map_err(|_| NoteError::UploadFailed("Failed to read file bytes".to_string()))?;
 
-            if fs::write(&path, &data).await.is_ok() {
-                file_path = Some(path.to_str().unwrap().to_string());
-            } else {
-                Err(NoteError::UploadFailed("Failed to save file".to_string()))?;
+            // Check file size (using same pattern as IQPS)
+            if data.len() > FILE_SIZE_LIMIT {
+                return Err(NoteError::InvalidData(format!(
+                    "File size too big. Only files up to {} MiB are allowed.",
+                    FILE_SIZE_LIMIT >> 20
+                )))?;
             }
-            continue; // Move to the next field
+
+            file_data = Some(data);
+            continue;
         }
 
-        // For all other text-based fields
+        // Handle text fields
         let data = field.text().await.map_err(|_| {
             NoteError::UploadFailed(format!("Invalid format for field: {}", name))
         })?;
 
         match name.as_str() {
-            "title" => title = data,
-            "description" => description = Some(data),
+            "course_name" => course_name = data,
+            "course_code" => course_code = data,
+            "description" => {
+                if !data.trim().is_empty() {
+                    description = Some(data);
+                }
+            }
             "professor_names" => {
-                professor_names = Some(data.split(',').map(|s| s.trim().to_string()).collect())
+                let names: Vec<String> = data
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if !names.is_empty() {
+                    professor_names = Some(names);
+                }
             }
-            "course_names" => {
-                course_names = Some(data.split(',').map(|s| s.trim().to_string()).collect())
+            "tags" => {
+                tags = data
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
             }
-            "tags" => tags = Some(data.split(',').map(|s| s.trim().to_string()).collect()),
             _ => (),
         }
     }
 
-    if title.is_empty() {
-        return Err(NoteError::InvalidData("Title is required".to_string()))?;
+    // Validate required fields
+    if course_name.trim().is_empty() {
+        return Err(NoteError::InvalidData("Course name is required".to_string()))?;
+    }
+    if course_code.trim().is_empty() {
+        return Err(NoteError::InvalidData("Course code is required".to_string()))?;
     }
 
-    let uploader_id = user.id;
-
-    let final_file_path =
-        file_path.ok_or(NoteError::InvalidData("File not provided".to_string()))?;
+    let file_bytes = file_data.ok_or(NoteError::InvalidData("File not provided".to_string()))?;
 
     let new_note = CreateNote {
-        title,
+        course_name,
+        course_code,
         description,
         professor_names,
-        course_names,
         tags,
-        file_path: final_file_path,
-        uploader_id,
+        has_preview_image: false,
+        uploader_user_id: user.id,
+        timestamp: Utc::now(),
     };
 
-    match create_note(&state.db_wrapper, new_note).await {
-        Ok(note) => Ok((StatusCode::OK, Json(note).into_response())),
-        Err(_err) => {
-            Err(NoteError::UploadFailed("Failed to create note".to_string()).into())
+    let (tx, note) = create_note(&state.db_wrapper, new_note).await.map_err(
+        |err| NoteError::DatabaseError("Failed to create note".to_string(), err.into()),
+    )?;
+
+    // Create the file slug/path (similar to IQPS)
+    let file_slug = state
+        .env_vars
+        .paths
+        .get_note_slug(&format!("{}.pdf", note.id));
+
+    // Update the note with file path in the database
+    {
+        let file_path = state.env_vars.paths.get_note_path_from_slug(&file_slug);
+
+        // Ensure the directory exists
+        if let Some(parent_dir) = file_path.parent() {
+            if !parent_dir.exists() {
+                fs::create_dir_all(parent_dir)
+                    .await
+                    .map_err(|_| NoteError::UploadFailed("Failed to create upload directory".to_string()))?;
+            }
         }
-    }
+
+        // Write the file data (following IQPS pattern)
+        if fs::write(&file_path, &file_bytes).await.is_ok() {
+            if tx.commit().await.is_ok() {
+                Ok((StatusCode::CREATED, Json(note).into_response()))
+            } else {
+                let _ = fs::remove_file(file_path).await;
+                Err(NoteError::UploadFailed("Failed to save note to database".to_string()))?
+            }
+        } else {
+            tx.rollback().await.map_err(|_| NoteError::UploadFailed("Failed to rollback database".to_string()))?;
+            Err(NoteError::UploadFailed("Failed to save file".to_string()))?
+        }
+    } 
 }

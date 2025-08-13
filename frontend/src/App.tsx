@@ -1,89 +1,86 @@
-import { useState } from 'react';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import './App.css';
+// App.tsx
+import React, { useState } from 'react';
+import Header from './components/Header';
+import SearchBar from './components/SearchBar';
+import CourseGrid from './components/CourseGrid';
+import Footer from './components/Footer';
+import type {Course} from './types';
 
-// Define a type for the user profile state
-interface UserProfile {
-    id: string;
-    email: string;
-    full_name: string;
-    reputation: number;
-}
+const App: React.FC = () => {
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
-function App() {
-    const [user, setUser] = useState<UserProfile | null>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleLoginSuccess = async (credentialResponse: CredentialResponse) => {
-        setError(null);
-        console.log('Login Success:', credentialResponse);
-
-        // The credential is the ID token JWT.
-        const idToken = credentialResponse.credential;
-
-        if (!idToken) {
-            setError("Failed to get ID token from Google.");
-            return;
+    const courses: Course[] = [
+        {
+            id: 1,
+            name: "Course Name",
+            code: "Course Code",
+            professor: "Professor Name",
+            uploadedBy: "Uploaded By",
+            helpfulCount: "x%"
+        },
+        {
+            id: 2,
+            name: "Course Name",
+            code: "Course Code",
+            professor: "Professor Name",
+            uploadedBy: "Uploaded By",
+            helpfulCount: "x%"
+        },
+        {
+            id: 3,
+            name: "Course Name",
+            code: "Course Code",
+            professor: "Professor Name",
+            uploadedBy: "Uploaded By",
+            helpfulCount: "x%"
+        },
+        {
+            id: 4,
+            name: "Course Name",
+            code: "Course Code",
+            professor: "Professor Name",
+            uploadedBy: "Uploaded By",
+            helpfulCount: "x%"
+        },
+        {
+            id: 5,
+            name: "Course Name",
+            code: "Course Code",
+            professor: "Professor Name",
+            uploadedBy: "Uploaded By",
+            helpfulCount: "x%"
+        },
+        {
+            id: 6,
+            name: "Course Name",
+            code: "Course Code",
+            professor: "Professor Name",
+            uploadedBy: "Uploaded By",
+            helpfulCount: "x%"
         }
+    ];
 
-        try {
-            // Send the ID token to your backend for verification and user creation/login
-            const response = await fetch('http://localhost:3000/api/auth/google', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: idToken }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Backend verification failed');
-            }
-
-            const userData: UserProfile = await response.json();
-            setUser(userData); // Set the user state with data from your backend
-        } catch (err) {
-            console.error('Backend communication error:', err);
-            setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-        }
-    };
-
-    const handleLoginError = () => {
-        console.log('Login Failed');
-        setError('Google login failed. Please try again.');
-    };
-
-    const handleLogout = () => {
-        setUser(null);
-        // Here you would also clear any session/token stored locally
+    const handleSearchChange = (query: string): void => {
+        setSearchQuery(query);
+        console.log('Searching for:', query);
     };
 
     return (
-        <>
-            <h1>Help Me Find My Notes</h1>
-            <div className="card">
-                {user ? (
-                    <div>
-                        <h2>Welcome, {user.full_name}!</h2>
-                        <p>Email: {user.email}</p>
-                        <p>Reputation: {user.reputation}</p>
-                        <button onClick={handleLogout}>Logout</button>
-                    </div>
-                ) : (
-                    <div>
-                        <h2>Please sign in to continue</h2>
-                        <GoogleLogin
-                            onSuccess={handleLoginSuccess}
-                            onError={handleLoginError}
-                            useOneTap
-                        />
-                    </div>
-                )}
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-            </div>
-        </>
+        <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+            <Header />
+
+            <main className="w-full px-4 lg:px-6 py-8 max-w-full">
+                <SearchBar
+                    searchQuery={searchQuery}
+                    onSearchChange={handleSearchChange}
+                />
+
+                <CourseGrid courses={courses} />
+
+                <Footer />
+            </main>
+        </div>
     );
-}
+};
 
 export default App;

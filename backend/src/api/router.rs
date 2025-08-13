@@ -19,14 +19,14 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
 
     let protected_router = Router::new()
         .route("/notes/upload", post(handlers::notes::upload_note))
-        .route(
-            "/notes/{note_id}/upvote",
-            post(handlers::votes::upvote_handler),
-        )
-        .route(
-            "/notes/{note_id}/downvote",
-            post(handlers::votes::downvote_handler),
-        )
+        // .route(
+        //     "/notes/{note_id}/upvote",
+        //     post(handlers::votes::upvote_handler),
+        // )
+        // .route(
+        //     "/notes/{note_id}/downvote",
+        //     post(handlers::votes::downvote_handler),
+        // )
         .route_layer(from_fn_with_state(
             state.clone(),
             auth::verify_token_middleware,

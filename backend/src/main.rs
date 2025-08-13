@@ -2,6 +2,7 @@
 mod api;
 mod db;
 mod env;
+mod pathutils;
 
 use tower_http::cors::{Any, CorsLayer};
 use std::net::SocketAddr;
@@ -11,7 +12,7 @@ use dotenvy::dotenv;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    let env_vars = env::EnvVars::parse();
+    let env_vars = env::EnvVars::parse().process()?;
     tracing_subscriber::fmt::init();
     let db_wrapper = db::DBPoolWrapper::new().await;
     tracing::info!("Database connection established.");

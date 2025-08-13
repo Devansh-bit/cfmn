@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -15,17 +16,17 @@ pub struct User {
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
 pub struct Note {
     pub id: Uuid,
-    pub title: String,
+    pub course_name: String,
+    pub course_code: String,
     pub description: Option<String>,
     pub professor_names: Option<Vec<String>>,
-    pub course_names: Option<Vec<String>>,
     pub tags: Vec<String>,
     pub is_public: bool,
-    pub is_archived: bool,
-    pub file_path: String,
-    pub uploader_id: Uuid,
+    pub has_preview_image: bool,
+    pub uploader_user_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
+
 #[derive(Serialize, Deserialize, Debug, sqlx::FromRow)]
 pub struct Vote {
     pub id: Uuid,

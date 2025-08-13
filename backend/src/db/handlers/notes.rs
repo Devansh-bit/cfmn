@@ -1,49 +1,42 @@
+use uuid::Uuid;
 use crate::db::db::DBPoolWrapper;
 use crate::db::models::Note;
-use serde::Deserialize;
-use uuid::Uuid;
-
-#[derive(Deserialize)]
-pub struct CreateNote {
-    pub title: String,
-    pub description: Option<String>,
-    pub professor_names: Option<Vec<String>>,
-    pub course_names: Option<Vec<String>>,
-    pub tags: Option<Vec<String>>,
-    pub file_path: String,
-    pub uploader_id: Uuid,
-}
+use crate::api::models::CreateNote;
 
 /// Inserts a new note record into the database.
 pub async fn create_note(
     db_wrapper: &DBPoolWrapper,
     new_note: CreateNote,
-) -> Result<Note, sqlx::Error> {
+) -> Result<(sqlx::Transaction<'_, sqlx::Postgres>, Note), sqlx::Error> {
+    // Begin a transaction
+    let mut tx = db_wrapper.pool().begin().await?;
+
     let note = sqlx::query_as!(
         Note,
         r#"
-        INSERT INTO notes (title, description, professor_names, course_names, tags, file_path, uploader_id)
+        INSERT INTO notes (course_name, course_code, description, professor_names, tags, has_preview_image, uploader_user_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at
+        RETURNING id, course_name, course_code, description, professor_names, tags, is_public, has_preview_image, uploader_user_id, created_at
         "#,
-        new_note.title,
+        new_note.course_name,
+        new_note.course_code,
         new_note.description,
         new_note.professor_names.as_deref(),
-        new_note.course_names.as_deref(),
-        &new_note.tags.unwrap_or_default(),
-        new_note.file_path,
-        new_note.uploader_id
+        &new_note.tags,
+        new_note.has_preview_image,
+        new_note.uploader_user_id
     )
-        .fetch_one(db_wrapper.pool())
+        .fetch_one(&mut *tx)  // Execute on the transaction instead of the pool
         .await?;
-    Ok(note)
+
+    Ok((tx, note))
 }
 
 /// Fetches all note records from the database.
 pub async fn get_all_notes(db_wrapper: &DBPoolWrapper) -> Result<Vec<Note>, sqlx::Error> {
     let notes = sqlx::query_as!(
         Note,
-        "SELECT id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at FROM notes"
+        "SELECT * FROM notes"
     )
         .fetch_all(db_wrapper.pool())
         .await?;
@@ -59,13 +52,27 @@ pub async fn search_notes_by_query(
     let notes = sqlx::query_as!(
         Note,
         r#"
-        SELECT id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at
+        SELECT *
         FROM notes
-        WHERE title ILIKE $1 OR description ILIKE $1
+        WHERE course_name ILIKE $1 OR course_code ILIKE $1
         "#,
         search_term
     )
         .fetch_all(db_wrapper.pool())
         .await?;
     Ok(notes)
+}
+
+pub async fn get_note_by_id(
+    db_wrapper: &DBPoolWrapper,
+    note_id: Uuid,
+) -> Result<Note, sqlx::Error> {
+    let note = sqlx::query_as!(
+        Note,
+        "SELECT * FROM notes WHERE id = $1",
+        note_id
+    )
+        .fetch_one(db_wrapper.pool())
+        .await?;
+    Ok(note)
 }
