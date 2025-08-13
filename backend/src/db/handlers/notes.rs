@@ -33,10 +33,11 @@ pub async fn create_note(
 }
 
 /// Fetches all note records from the database.
-pub async fn get_all_notes(db_wrapper: &DBPoolWrapper) -> Result<Vec<Note>, sqlx::Error> {
+pub async fn get_all_notes(db_wrapper: &DBPoolWrapper, num_notes: usize) -> Result<Vec<Note>, sqlx::Error> {
     let notes = sqlx::query_as!(
         Note,
-        "SELECT * FROM notes"
+        "SELECT * FROM notes ORDER BY created_at DESC LIMIT $1 ",
+        num_notes as i64  // Convert usize to i64 for SQL compatibility
     )
         .fetch_all(db_wrapper.pool())
         .await?;

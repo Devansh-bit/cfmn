@@ -1,12 +1,11 @@
 use crate::api::errors::{AppError, NoteError};
 use crate::api::router::RouterState;
 use crate::db::handlers::notes::{create_note, get_all_notes, search_notes_by_query, get_note_by_id};
-use axum::extract::{multipart::Multipart, Query, State};
+use axum::extract::{multipart::Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use serde::Deserialize;
-use std::path::Path;
 use axum::body::Bytes;
 use chrono::Utc;
 use tokio::fs;
@@ -19,10 +18,25 @@ use crate::db::models::User;
 /// API handler to list all notes.
 pub async fn list_notes(
     State(state): State<RouterState>,
+    Query(num): Query<usize>,
 ) -> Result<(StatusCode, Response), AppError> {
-    match get_all_notes(&state.db_wrapper).await {
+    match get_all_notes(&state.db_wrapper, num).await {
         Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
         Err(err) => Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err.into()).into()),
+    }
+}
+
+pub async fn note_by_id(
+    State(state): State<RouterState>,
+    Path(note_id): Path<Uuid>,
+) -> Result<(StatusCode, Response), AppError> {
+    tracing::debug!("Fetching note with ID: {}", note_id);
+    match get_note_by_id(&state.db_wrapper, note_id).await {
+        Ok(note) => Ok((StatusCode::OK, Json(note).into_response())),
+        Err(err) => {
+            tracing::error!("Failed to fetch note: {:?}", err);
+            Err(NoteError::DatabaseError("Failed to fetch note".to_string(), err.into()).into())
+        }
     }
 }
 

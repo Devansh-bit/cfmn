@@ -19,14 +19,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
 
     let protected_router = Router::new()
         .route("/notes/upload", post(handlers::notes::upload_note))
-        // .route(
-        //     "/notes/{note_id}/upvote",
-        //     post(handlers::votes::upvote_handler),
-        // )
-        // .route(
-        //     "/notes/{note_id}/downvote",
-        //     post(handlers::votes::downvote_handler),
-        // )
+        // We will implement vote routes later
         .route_layer(from_fn_with_state(
             state.clone(),
             auth::verify_token_middleware,
@@ -36,7 +29,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/", get(handlers::misc::index))
         .route("/notes", get(handlers::notes::list_notes))
         .route("/notes/search", get(handlers::notes::search_notes))
-        //.route("/notes/{note_id}", get(handlers::notes::download_note))
+        .route("/notes/{note_id}", get(handlers::notes::note_by_id))
         .route("/auth/google", post(handlers::auth::google_auth_callback))
     ;
 
