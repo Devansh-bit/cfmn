@@ -9,25 +9,29 @@ pub struct GoogleUserInfo {
     pub full_name: String,
 }
 
-/// Finds a user by their Google ID. If the user doesn't exist, it creates a new one.
-pub async fn find_or_create_user(
+pub async fn find_user_by_google_id(
     db_wrapper: &DBPoolWrapper,
-    user_info: GoogleUserInfo,
-) -> Result<User, sqlx::Error> {
-    // Check if user exists
-    let existing_user = sqlx::query_as!(
+    google_id: &str,
+) -> Result<Option<User>, sqlx::Error> {
+    let user = sqlx::query_as!(
         User,
         "SELECT * FROM users WHERE google_id = $1",
-        user_info.google_id
+        google_id
     )
         .fetch_optional(db_wrapper.pool())
         .await?;
 
+    Ok(user)
+}
+
+pub async fn find_or_create_user(
+    db_wrapper: &DBPoolWrapper,
+    user_info: GoogleUserInfo,
+) -> Result<User, sqlx::Error> {
+    let existing_user = find_user_by_google_id(db_wrapper, &user_info.google_id).await?;
     if let Some(user) = existing_user {
         return Ok(user);
     }
-
-    // If not, create a new user
     let new_user = sqlx::query_as!(
         User,
         "INSERT INTO users (google_id, email, full_name) VALUES ($1, $2, $3) RETURNING *",

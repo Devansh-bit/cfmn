@@ -1,18 +1,18 @@
 // backend/src/main.rs
 mod api;
 mod db;
+mod env;
 
 use tower_http::cors::{Any, CorsLayer};
 use std::net::SocketAddr;
+use clap::Parser;
+use dotenvy::dotenv;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load environment variables from .env file
-    dotenvy::dotenv().expect("Failed to read .env file");
-
+    dotenv().ok();
+    let env_vars = env::EnvVars::parse();
     tracing_subscriber::fmt::init();
-
-    // Connect to the database
     let db_wrapper = db::DBPoolWrapper::new().await;
     tracing::info!("Database connection established.");
 
@@ -21,7 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    let app = api::router::create_router(db_wrapper).layer(cors);
+    let app = api::router::create_router(db_wrapper, env_vars).layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     tracing::info!("Server listening on {}", addr);

@@ -22,6 +22,7 @@ impl IntoResponse for AppError {
 pub enum UserError {
     Conflict(String, Box<dyn std::error::Error>),
     Unknown(String, Box<dyn std::error::Error>),
+    NotFound(String),
 }
 
 impl From<UserError> for AppError {
@@ -41,6 +42,10 @@ impl IntoResponse for UserError {
                 tracing::error!("Unknown user error: {}", err);
                 (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
             }
+            UserError::NotFound(msg) => {
+                tracing::warn!("User not found: {}", msg);
+                (StatusCode::NOT_FOUND, msg).into_response()
+            }
         }
     }
 }
@@ -50,6 +55,8 @@ pub enum AuthError {
     TokenError(String, Box<dyn std::error::Error>),
     BadResponse(String),
     ConfigError(String),
+    InvalidToken(String),
+    DatabaseError(String, Box<dyn std::error::Error>),
 }
 
 impl From<AuthError> for AppError {
@@ -75,6 +82,14 @@ impl IntoResponse for AuthError {
             }
             AuthError::ConfigError(msg) => {
                 tracing::error!("Authentication config error: {}", msg);
+                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
+            }
+            AuthError::InvalidToken(msg) => {
+                tracing::error!("Invalid authentication token: {}", msg);
+                (StatusCode::UNAUTHORIZED, msg).into_response()
+            }
+            AuthError::DatabaseError(msg, err) => {
+                tracing::error!("Authentication database error: {}: {:?}", msg, err);
                 (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
             }
         }
