@@ -4,11 +4,12 @@ use crate::db::handlers::notes::{create_note, get_all_notes, search_notes_by_que
 use axum::extract::{multipart::Multipart, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
+use axum::{Extension, Json};
 use serde::Deserialize;
 use std::path::Path;
 use tokio::fs;
 use uuid::Uuid;
+use crate::db::models::User;
 
 /// API handler to list all notes.
 pub async fn list_notes(
@@ -50,11 +51,11 @@ pub async fn search_notes(
 /// Array fields like 'tags' should be comma-separated strings.
 pub async fn upload_note(
     State(state): State<RouterState>,
+    Extension(user): Extension<User>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Response), AppError> {
     let mut title = String::new();
     let mut description: Option<String> = None;
-    let mut uploader_id_str = String::new();
     let mut professor_names: Option<Vec<String>> = None;
     let mut course_names: Option<Vec<String>> = None;
     let mut tags: Option<Vec<String>> = None;
@@ -104,8 +105,6 @@ pub async fn upload_note(
         match name.as_str() {
             "title" => title = data,
             "description" => description = Some(data),
-            "uploader_id" => uploader_id_str = data,
-            // For array fields, we expect a comma-separated string
             "professor_names" => {
                 professor_names = Some(data.split(',').map(|s| s.trim().to_string()).collect())
             }
@@ -121,9 +120,7 @@ pub async fn upload_note(
         return Err(NoteError::InvalidData("Title is required".to_string()))?;
     }
 
-    let uploader_id = Uuid::parse_str(&uploader_id_str).map_err(|_| {
-        NoteError::InvalidData("Invalid or missing uploader_id".to_string())
-    })?;
+    let uploader_id = user.id;
 
     let final_file_path =
         file_path.ok_or(NoteError::InvalidData("File not provided".to_string()))?;

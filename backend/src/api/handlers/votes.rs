@@ -1,14 +1,10 @@
 use crate::api::errors::AppError;
 use crate::api::router::RouterState;
 use crate::db::handlers::votes::{downvote, upvote};
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
+use axum::{extract::{Path, State}, http::StatusCode, response::{IntoResponse, Response}, Extension, Json};
 use serde::Deserialize;
 use uuid::Uuid;
+use crate::db::models::User;
 
 #[derive(Deserialize)]
 pub struct VoteRequest {
@@ -17,10 +13,10 @@ pub struct VoteRequest {
 
 pub async fn upvote_handler(
     State(state): State<RouterState>,
+    Extension(user): Extension<User>,
     Path(note_id): Path<Uuid>,
-    Json(payload): Json<VoteRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    match upvote(&state.db_wrapper, payload.user_id, note_id).await {
+    match upvote(&state.db_wrapper, user.id, note_id).await {
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => {
             tracing::error!("Failed to upvote note: {}", e);
@@ -34,10 +30,10 @@ pub async fn upvote_handler(
 
 pub async fn downvote_handler(
     State(state): State<RouterState>,
+    Extension(user): Extension<User>,
     Path(note_id): Path<Uuid>,
-    Json(payload): Json<VoteRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    match downvote(&state.db_wrapper, payload.user_id, note_id).await {
+    match downvote(&state.db_wrapper, user.id, note_id).await {
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => {
             tracing::error!("Failed to downvote note: {}", e);
