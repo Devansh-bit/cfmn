@@ -63,7 +63,7 @@ const AppContent: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-dark-background flex flex-col">
             <AuthProvider onSignIn={loadNotes}>
                 <Header onNoteUploaded={handleNoteUploaded} />
 
@@ -73,15 +73,15 @@ const AppContent: React.FC = () => {
                     </div>
 
                     {error && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                        <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg text-red-300">
                             {error}
                         </div>
                     )}
 
                     {loading ? (
                         <div className="flex justify-center items-center py-12">
-                            <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="ml-3 text-gray-600">Loading notes...</span>
+                            <div className="w-8 h-8 border-2 border-dark-primary border-t-transparent rounded-full animate-spin"></div>
+                            <span className="ml-3 text-dark-text-secondary">Loading notes...</span>
                         </div>
                     ) : (
                         <CourseGrid notes={notes} />

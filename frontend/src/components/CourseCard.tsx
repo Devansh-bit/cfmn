@@ -159,14 +159,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
 
     return (
         <>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-dark-surface rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
                 {/* Preview Image with Light Purple Placeholder */}
                 <div className="relative w-full h-48">
                     {shouldShowPlaceholder ? (
                         // Light purple placeholder background
-                        <div className="w-full h-full bg-purple-100 flex flex-col items-center justify-center">
-                            <FileText className="text-purple-300 mb-2" size={32} />
-                            <span className="text-purple-400 text-sm font-medium">Notes Preview</span>
+                        <div className="w-full h-full bg-gray-800 flex flex-col items-center justify-center">
+                            <FileText className="text-gray-600 mb-2" size={32} />
+                            <span className="text-gray-500 text-sm font-medium">Notes Preview</span>
                         </div>
                     ) : (
                         // Actual image
@@ -181,7 +181,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                     {isOwner && (
                         <button
                             onClick={handleEdit}
-                            className="absolute top-3 right-3 bg-white bg-opacity-90 text-gray-600 hover:text-purple-600 p-2 rounded-full shadow-md transition-colors duration-200"
+                            className="absolute top-3 right-3 bg-dark-surface bg-opacity-90 text-dark-text-secondary hover:text-dark-primary p-2 rounded-full shadow-md transition-colors duration-200"
                         >
                             <Edit size={16} />
                         </button>
@@ -192,10 +192,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                 <div className="p-5">
                     {/* Header */}
                     <div className="mb-3">
-                        <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide bg-purple-50 px-2 py-1 rounded">
+                        <span className="text-xs font-semibold text-dark-primary uppercase tracking-wide bg-gray-800 px-2 py-1 rounded">
                             {note.course_code}
                         </span>
-                        <h3 className="text-lg font-semibold text-gray-900 mt-2 leading-tight">
+                        <h3 className="text-lg font-semibold text-dark-text mt-2 leading-tight">
                             {note.course_name}
                         </h3>
                     </div>
@@ -203,11 +203,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                     {/* Description with Truncation */}
                     <div className="mb-4">
                         {note.description ? (
-                            <p className="text-gray-600 text-sm leading-relaxed">
+                            <p className="text-dark-text-secondary text-sm leading-relaxed">
                                 {truncateText(note.description, 100)}
                             </p>
                         ) : (
-                            <p className="text-gray-400 text-sm italic">
+                            <p className="text-gray-600 text-sm italic">
                                 No description provided
                             </p>
                         )}
@@ -220,40 +220,40 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                                 {visibleTags.map((tag, index) => (
                                     <span
                                         key={index}
-                                        className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full"
+                                        className="px-2 py-1 bg-gray-800 text-dark-secondary text-xs rounded-full"
                                     >
                                         {tag}
                                     </span>
                                 ))}
                                 {remainingCount > 0 && (
-                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                    <span className="px-2 py-1 bg-gray-700 text-dark-text-secondary text-xs rounded-full">
                                         +{remainingCount} more
                                     </span>
                                 )}
                             </div>
                         ) : (
-                            <span className="text-gray-400 text-xs italic">No tags provided</span>
+                            <span className="text-gray-600 text-xs italic">No tags provided</span>
                         )}
                     </div>
 
                     {/* Professor Names */}
                     <div className="mb-4 h-5">
                         {note.professor_names && note.professor_names.length > 0 ? (
-                            <p className="text-sm text-gray-500 flex items-center">
-                                <span className="text-gray-400 mr-1">Prof:</span>
+                            <p className="text-sm text-dark-text-secondary flex items-center">
+                                <span className="text-gray-600 mr-1">Prof:</span>
                                 <span className="truncate">
                                     {note.professor_names.join(', ')}
                                 </span>
                             </p>
                         ) : (
-                            <p className="text-sm text-gray-400 italic">
+                            <p className="text-sm text-gray-600 italic">
                                 No professors were specified
                             </p>
                         )}
                     </div>
 
                     {/* Actions Bar - Updated with proper voting */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-800">
                         <div className="flex items-center space-x-4">
                             {/* Upvote Button */}
                             <button
@@ -261,8 +261,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                                 disabled={isVoting}
                                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
                                     userVote === 'upvote'
-                                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                                        : 'text-gray-500 hover:text-green-600 hover:bg-gray-100'
+                                        ? 'bg-green-900 text-green-400 hover:bg-green-800'
+                                        : 'text-dark-text-secondary hover:text-green-400 hover:bg-gray-800'
                                 } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title="Upvote"
                             >
@@ -279,8 +279,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                                 disabled={isVoting}
                                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
                                     userVote === 'downvote'
-                                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                                        : 'text-gray-500 hover:text-red-600 hover:bg-gray-100'
+                                        ? 'bg-red-900 text-red-400 hover:bg-red-800'
+                                        : 'text-dark-text-secondary hover:text-red-400 hover:bg-gray-800'
                                 } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title="Downvote"
                             >
@@ -293,13 +293,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                         </div>
 
                         <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-1 text-gray-500">
+                            <div className="flex items-center space-x-1 text-dark-text-secondary">
                                 <Download size={14} />
                                 <span>{downloadCount}</span>
                             </div>
                             <button
                                 onClick={handleDownload}
-                                className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium shadow-sm"
+                                className="flex items-center space-x-2 bg-dark-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-200 text-sm font-medium shadow-sm"
                             >
                                 <span>View PDF</span>
                             </button>

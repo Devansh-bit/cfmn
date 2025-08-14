@@ -61,25 +61,25 @@ const Header: React.FC<HeaderProps> = ({ onNoteUploaded }) => {
 
     return (
         <>
-            <header className="bg-white shadow-md sticky top-0 z-50">
+            <header className="bg-dark-surface shadow-md sticky top-0 z-50">
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center space-x-2">
-                        <h1 className="text-2xl font-bold text-purple-600">CFMN</h1>
+                        <h1 className="text-2xl font-bold text-dark-primary">CFMN</h1>
                     </div>
 
                     {/* Navigation Actions */}
                     <div className="flex items-center space-x-4">
                         {isLoading ? (
                             <div className="animate-pulse">
-                                <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                                <div className="h-8 w-20 bg-gray-700 rounded"></div>
                             </div>
                         ) : isAuthenticated ? (
                             <>
                                 {/* Upload Button */}
                                 <button
                                     onClick={handleUploadClick}
-                                    className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                                    className="flex items-center space-x-2 bg-dark-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors"
                                 >
                                     <Upload size={18} />
                                     <span>Upload</span>
@@ -87,12 +87,12 @@ const Header: React.FC<HeaderProps> = ({ onNoteUploaded }) => {
 
                                 {/* User Menu */}
                                 <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-dark-text-secondary">
                     Welcome, {user?.full_name?.split(' ')[0]}
                   </span>
                                     <button
                                         onClick={signOut}
-                                        className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition-colors"
+                                        className="flex items-center space-x-1 text-dark-text-secondary hover:text-red-400 transition-colors"
                                     >
                                         <LogOut size={18} />
                                         <span>Sign Out</span>
@@ -104,7 +104,7 @@ const Header: React.FC<HeaderProps> = ({ onNoteUploaded }) => {
                                 {/* Upload Button - triggers sign-in */}
                                 <button
                                     onClick={handleUploadClick}
-                                    className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                                    className="flex items-center space-x-2 bg-dark-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors"
                                 >
                                     <Plus size={18} />
                                     <span>Upload</span>
@@ -113,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({ onNoteUploaded }) => {
                                 {/* Direct Sign In Button */}
                                 <button
                                     onClick={handleDirectSignIn}
-                                    className="flex items-center space-x-2 border border-purple-600 text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors"
+                                    className="flex items-center space-x-2 border border-dark-primary text-dark-primary px-4 py-2 rounded-lg hover:bg-dark-primary hover:text-white transition-colors"
                                 >
                                     <span>Sign In</span>
                                 </button>

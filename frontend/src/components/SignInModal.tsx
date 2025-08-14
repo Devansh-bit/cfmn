@@ -97,22 +97,22 @@ const SignInModal: React.FC<SignInModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div
                 ref={modalRef}
-                className="bg-white rounded-xl shadow-xl w-full max-w-md mx-auto"
+                className="bg-dark-surface rounded-xl shadow-xl w-full max-w-md mx-auto"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="signin-modal-title"
             >
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-200">
-                    <h2 id="signin-modal-title" className="text-xl font-semibold text-gray-900">
+                <div className="flex justify-between items-center p-6 border-b border-gray-700">
+                    <h2 id="signin-modal-title" className="text-xl font-semibold text-dark-text">
                         {title}
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                         aria-label="Close modal"
                     >
                         <X size={20} />
@@ -121,7 +121,7 @@ const SignInModal: React.FC<SignInModalProps> = ({
 
                 {/* Content */}
                 <div className="p-6">
-                    <p className="text-gray-600 mb-6 text-center">
+                    <p className="text-dark-text-secondary mb-6 text-center">
                         {defaultMessage}
                     </p>
 
@@ -129,7 +129,7 @@ const SignInModal: React.FC<SignInModalProps> = ({
                     <div className="flex justify-center mb-4">
                         <div ref={buttonRef} className="w-full max-w-xs">
                             {/* Fallback button if Google Services don't load */}
-                            <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                            <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-700 rounded-lg shadow-sm bg-dark-surface text-dark-text hover:bg-gray-800 transition-colors font-medium">
                                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -150,10 +150,10 @@ const SignInModal: React.FC<SignInModalProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 rounded-b-xl">
+                <div className="px-6 py-4 bg-gray-900 rounded-b-xl">
                     <button
                         onClick={onClose}
-                        className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                        className="w-full px-4 py-2 text-dark-text-secondary hover:text-white font-medium transition-colors"
                     >
                         Cancel
                     </button>
