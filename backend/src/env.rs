@@ -30,7 +30,7 @@ pub struct EnvVars {
     uploaded_notes_path: PathBuf,
     #[arg(env, default_value = "previews/uploaded")]
     /// The path where uploaded notes are stored temporarily, relative to the `static_file_storage_location`
-    uploaded_previews_path: PathBuf,
+    previews_path: PathBuf,
 
     #[arg(skip)]
     /// All paths must be handled using this
@@ -38,12 +38,13 @@ pub struct EnvVars {
 }
 
 impl EnvVars {
-    /// Processes the environment variables after reading.
-    pub fn process(mut self) -> Result<Self, Box<dyn std::error::Error>> {
+    /// Processes the environment variables after reading, initializing the Paths struct.
+    pub fn process(mut self) -> Result<Self, color_eyre::eyre::Error> {
         self.paths = Paths::new(
             &self.static_files_url,
             &self.static_file_storage_location,
             &self.uploaded_notes_path,
+            &self.previews_path,
         )?;
 
         Ok(self)

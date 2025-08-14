@@ -222,7 +222,7 @@ pub async fn upload_note(
 
     // Update the note with file path in the database
     {
-        let file_path = state.env_vars.paths.get_note_path_from_slug(&file_slug);
+        let file_path = state.env_vars.paths.get_path_from_slug(&file_slug);
 
         // Ensure the directory exists
         if let Some(parent_dir) = file_path.parent() {

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx::Postgres;
 use uuid::Uuid;
 use crate::db::db::DBPoolWrapper;
 use crate::db::models::{Note, NoteWithUser, User};
@@ -6,6 +7,23 @@ use crate::db::models::{Note, NoteWithUser, User};
 use crate::api::models::CreateNote;
 
 /// Inserts a new note record into the database.
+
+pub async fn update_note_preview_status(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    note_id: Uuid,
+    status: bool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE notes SET has_preview_image = $1 WHERE id = $2",
+        status,
+        note_id
+    )
+        .execute(&mut **tx)
+        .await?;
+
+    Ok(())
+}
+
 pub async fn create_note(
     db_wrapper: &DBPoolWrapper,
     new_note: CreateNote,
