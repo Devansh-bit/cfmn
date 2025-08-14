@@ -3,7 +3,13 @@ use crate::api::auth;
 use crate::db::DBPoolWrapper;
 use crate::env::EnvVars;
 use axum::middleware::from_fn_with_state;
-use axum::{routing::{get, post}, Router};
+use axum::{
+    http::{HeaderName, HeaderValue},
+    routing::{get, post},
+    Router
+};
+use tower_http::set_header::SetResponseHeaderLayer;
+use std::str::FromStr;
 
 #[derive(Clone)]
 pub(super) struct RouterState {
@@ -31,7 +37,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/notes/search", get(handlers::notes::search_notes))
         .route("/notes/{note_id}", get(handlers::notes::note_by_id))
         .route("/auth/google", post(handlers::auth::google_auth_callback))
-    ;
+        ;
 
     let api_router = Router::new().merge(public_router).merge(protected_router);
 
@@ -39,4 +45,17 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .nest("/api", api_router)
         .route("/", get(handlers::misc::serve_react_app))
         .with_state(state)
+        // Add security headers using tower-http to remove google onetap
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_str("Permissions-Policy").unwrap(),
+            HeaderValue::from_str("identity-credentials-get=()").unwrap(),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_str("Feature-Policy").unwrap(),
+            HeaderValue::from_str("identity-credentials-get 'none'").unwrap(),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_str("Content-Security-Policy").unwrap(),
+            HeaderValue::from_str("frame-ancestors 'self'; connect-src 'self' https://accounts.google.com/gsi/;").unwrap(),
+        ))
 }

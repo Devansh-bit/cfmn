@@ -21,3 +21,46 @@ html, body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Add this to your global CSS file (index.css or App.css) */
+
+/* Hide Google One Tap completely */
+#credential_picker_container,
+.g_id_signin,
+[data-auto-select],
+.g_id_signout,
+iframe[src*="accounts.google.com/gsi/iframe"],
+iframe[src*="accounts.google.com/oauth"],
+div[data-client-id] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+}
+
+/* Ensure your custom button is always visible */
+[data-google-signin-button],
+.google-signin-button {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Block any One Tap overlays */
+body > div[style*="position: fixed"],
+body > div[style*="z-index: 1000000"] {
+  display: none !important;
+}
+
+/* Additional One Tap selectors to block */
+.g-signin2,
+.g_id_signin_container,
+#g_id_onload {
+  display: none !important;
+}

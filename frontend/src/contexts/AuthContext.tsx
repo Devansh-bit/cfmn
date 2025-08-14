@@ -29,6 +29,7 @@ declare global {
                 };
             };
         };
+        googleAuthReady?: boolean; // Add this flag
     }
 }
 
@@ -39,11 +40,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [googleInitialized, setGoogleInitialized] = useState(false);
+    const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
     const isAuthenticated = !!user;
 
     // Check authentication status on mount
     useEffect(() => {
         checkAuthStatus();
+
+        // Cancel any existing One Tap prompts on mount
+        const cancelOneTap = () => {
+            if (window.google && window.google.accounts && window.google.accounts.id) {
+                try {
+                    window.google.accounts.id.cancel();
+                    window.google.accounts.id.disableAutoSelect();
+                } catch (error) {
+                    console.log('Could not cancel One Tap (not yet loaded):', error);
+                }
+            }
+        };
+
+        // Try to cancel immediately
+        cancelOneTap();
+
+        // Also try after a short delay in case Google script loads later
+        const timeoutId = setTimeout(cancelOneTap, 1000);
+
+        return () => clearTimeout(timeoutId);
     }, []);
 
     // Initialize Google OAuth
@@ -60,11 +82,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         callback: handleCredentialResponse,
                         auto_select: false,
                         cancel_on_tap_outside: true,
-                        use_fedcm_for_prompt: false, // Disable FedCM to avoid issues
+                        use_fedcm_for_prompt: false,
+                        ux_mode: 'popup', // Force popup mode instead of redirect
+                        context: 'signin', // Specify context
                     });
 
+                    // Disable One Tap to prevent automatic popup
+                    window.google.accounts.id.disableAutoSelect();
+
                     setGoogleInitialized(true);
+                    window.googleAuthReady = true; // Set global flag
                     console.log('Google Auth initialized successfully');
+
+                    // Trigger a custom event to notify components
+                    window.dispatchEvent(new CustomEvent('googleAuthReady'));
                 } catch (error) {
                     console.error('Failed to initialize Google Auth:', error);
                 }
@@ -76,6 +107,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const existingScript = document.querySelector('script[src*="gsi/client"]');
             if (existingScript) {
                 console.log('Google script already loaded');
+                setGoogleScriptLoaded(true);
                 initializeGoogleAuth();
                 return null;
             }
@@ -88,12 +120,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             script.onload = () => {
                 console.log('Google script loaded successfully');
-                // Add a small delay to ensure Google services are ready
-                setTimeout(initializeGoogleAuth, 100);
+                setGoogleScriptLoaded(true);
+                // Add a delay to ensure Google services are ready
+                setTimeout(() => {
+                    initializeGoogleAuth();
+                }, 200);
             };
 
             script.onerror = (error) => {
                 console.error('Failed to load Google Identity Services:', error);
+                setGoogleScriptLoaded(false);
             };
 
             document.head.appendChild(script);
@@ -105,6 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     if (scriptToRemove && scriptToRemove.parentNode) {
                         scriptToRemove.parentNode.removeChild(scriptToRemove);
                     }
+                    window.googleAuthReady = false;
                 } catch (error) {
                     console.warn('Failed to cleanup Google script:', error);
                 }
@@ -158,7 +195,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         } catch (error) {
             console.error('Authentication error:', error);
-            // Don't show alert immediately, let the user retry
             setUser(null);
             localStorage.removeItem('auth_token');
         } finally {
@@ -200,22 +236,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
-// AuthContext.tsx - Remove problematic signIn method
     const signIn = async (): Promise<void> => {
-        // Do not call prompt() programmatically
-        // The sign-in should only happen through the rendered Google button
         console.log('Sign-in should be triggered through Google Sign-In button');
         throw new Error('Please use the Google Sign-In button to authenticate');
     };
 
-
     const signOut = (): void => {
         try {
-            // Clear the token from localStorage
             localStorage.removeItem('auth_token');
             setUser(null);
 
-            // Disable Google auto-select for this session
             if (window.google && googleInitialized) {
                 window.google.accounts.id.disableAutoSelect();
             }
@@ -223,7 +253,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('Signed out successfully');
         } catch (error) {
             console.error('Sign out error:', error);
-            // Even if there's an error, clear local state
             localStorage.removeItem('auth_token');
             setUser(null);
         }
@@ -235,6 +264,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated,
         signIn,
         signOut,
+        googleInitialized, // Add this to the context
+        googleScriptLoaded, // Add this to the context
     };
 
     return (

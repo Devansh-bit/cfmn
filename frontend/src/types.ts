@@ -64,5 +64,6 @@ export interface AuthContextType {
     signIn: () => Promise<void>;
     signOut: () => void;
     promptSignIn?: () => void; // Add this optional method
+    googleInitialized: boolean; // Add this
+    googleScriptLoaded: boolean; // Add this
 }
-
