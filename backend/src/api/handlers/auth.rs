@@ -13,6 +13,7 @@ use jsonwebtoken::{decode, decode_header, encode, DecodingKey, EncodingKey, Head
 use reqwest;
 use serde::Deserialize;
 use std::collections::{HashMap};
+use serde_json::json;
 
 #[derive(Deserialize)]
 pub struct AuthRequest {
@@ -79,9 +80,8 @@ async fn get_google_public_keys() -> Result<HashMap<String, DecodingKey>, AppErr
 
 pub async fn google_auth_callback(
     State(state): State<RouterState>,
-    jar: CookieJar,
     Json(payload): Json<AuthRequest>,
-) -> Result<(CookieJar, (StatusCode, Response)), AppError> {
+) -> Result<Json<serde_json::Value>, AppError> {
     let header = decode_header(&payload.token).map_err(|e| {
         crate::api::errors::AuthError::RequestError("Invalid token header".to_string(), e.into())
     })?;
@@ -98,7 +98,6 @@ pub async fn google_auth_callback(
     })?;
 
     let google_client_id = state.env_vars.google_client_id;
-
     let mut validation = Validation::new(header.alg);
     validation.set_audience(&[google_client_id]);
 
@@ -142,17 +141,14 @@ pub async fn google_auth_callback(
         &app_claims,
         &EncodingKey::from_secret(state.env_vars.signing_secret.as_ref()),
     )
-    .map_err(|_| {
-        crate::api::errors::AuthError::ConfigError("Failed to create JWT token".to_string())
-    })?;
+        .map_err(|_| {
+            crate::api::errors::AuthError::ConfigError("Failed to create JWT token".to_string())
+        })?;
 
-    let cookie = Cookie::build(("token", token))
-        .path("/")
-        .http_only(true)
-        .secure(true);
-
-    Ok((
-        jar.add(cookie),
-        (StatusCode::OK, Json(user).into_response()),
-    ))
+    // Return both user and token instead of setting cookie
+    Ok(Json(json!({
+        "user": user,
+        "token": token
+    })))
 }
+

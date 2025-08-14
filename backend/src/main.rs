@@ -4,8 +4,9 @@ mod db;
 mod env;
 mod pathutils;
 
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowHeaders, AllowOrigin, Any, CorsLayer};
 use std::net::SocketAddr;
+use axum::http::{HeaderName, Method};
 use clap::Parser;
 use dotenvy::dotenv;
 

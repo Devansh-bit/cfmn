@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, title, description, professor_names, course_names, tags, is_public, is_archived, file_path, uploader_id, created_at FROM notes",
+  "query": "\n        INSERT INTO notes (course_name, course_code, description, professor_names, tags, has_preview_image, uploader_user_id)\n        VALUES ($1, $2, $3, $4, $5, $6, $7)\n        RETURNING id, course_name, course_code, description, professor_names, tags, is_public, has_preview_image, uploader_user_id, created_at\n        ",
   "describe": {
     "columns": [
       {
@@ -10,22 +10,22 @@
       },
       {
         "ordinal": 1,
-        "name": "title",
+        "name": "course_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 2,
+        "name": "course_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
         "name": "description",
         "type_info": "Text"
       },
       {
-        "ordinal": 3,
-        "name": "professor_names",
-        "type_info": "TextArray"
-      },
-      {
         "ordinal": 4,
-        "name": "course_names",
+        "name": "professor_names",
         "type_info": "TextArray"
       },
       {
@@ -40,35 +40,37 @@
       },
       {
         "ordinal": 7,
-        "name": "is_archived",
+        "name": "has_preview_image",
         "type_info": "Bool"
       },
       {
         "ordinal": 8,
-        "name": "file_path",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 9,
-        "name": "uploader_id",
+        "name": "uploader_user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "Bool",
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
       false,
-      true,
-      true,
-      true,
       false,
+      true,
+      true,
       false,
       false,
       false,
@@ -76,5 +78,5 @@
       false
     ]
   },
-  "hash": "e583f2325b934e41e4f2583e5a08ffa4b533cb6aef93c2f6dcb724936df3adb4"
+  "hash": "3785ac010f3c64b3ea5af25006965ea43d8ae4a5422c96bdac9064a2d58d0d5b"
 }

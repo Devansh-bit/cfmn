@@ -22,12 +22,15 @@ pub struct EnvVars {
     #[arg(env, default_value = "http://localhost:8081")]
     /// The URL of the static files server (odin's vault)
     static_files_url: String,
-    #[arg(env, default_value = "/srv/static")]
+    #[arg(env, default_value = "/home/exempl4r/coding/static")]
     /// The path where static files are served from
     static_file_storage_location: PathBuf,
-    #[arg(env, default_value = "/notes/uploaded")]
+    #[arg(env, default_value = "notes/uploaded")]
     /// The path where uploaded notes are stored temporarily, relative to the `static_file_storage_location`
     uploaded_notes_path: PathBuf,
+    #[arg(env, default_value = "previews/uploaded")]
+    /// The path where uploaded notes are stored temporarily, relative to the `static_file_storage_location`
+    uploaded_previews_path: PathBuf,
 
     #[arg(skip)]
     /// All paths must be handled using this

@@ -54,9 +54,9 @@ impl Paths {
 
         // The absolute system path for the notes directory
         let notes_system_path = path::absolute(static_file_storage_location.join(&notes_path_slug))?;
-
         // Create the notes directory if it doesn't exist
         if !notes_system_path.exists() {
+
             fs::create_dir_all(&notes_system_path)?;
         }
 
@@ -67,6 +67,8 @@ impl Paths {
             notes_path_slug,
         })
     }
+
+    /// TODO: Functions for handling preview images
 
     /// Returns the slug for a given filename
     ///

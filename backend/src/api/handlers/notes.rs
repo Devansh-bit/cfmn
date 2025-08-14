@@ -1,6 +1,6 @@
 use crate::api::errors::{AppError, NoteError};
 use crate::api::router::RouterState;
-use crate::db::handlers::notes::{create_note, get_all_notes, search_notes_by_query, get_note_by_id};
+use crate::db::handlers::notes::{create_note, get_notes, search_notes_by_query, get_note_by_id};
 use axum::extract::{multipart::Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -10,18 +10,30 @@ use axum::body::Bytes;
 use chrono::Utc;
 use tokio::fs;
 use uuid::Uuid;
-use crate::api::models::CreateNote;
+use crate::api::models::{CreateNote, ResponseNote, ResponseUser};
 use crate::db::models::User;
 
 
+#[derive(Deserialize)]
+pub struct NoteQuery {
+    pub num: Option<usize>,
+}
 
 /// API handler to list all notes.
 pub async fn list_notes(
     State(state): State<RouterState>,
-    Query(num): Query<usize>,
+    Query(query): Query<NoteQuery>,
 ) -> Result<(StatusCode, Response), AppError> {
-    match get_all_notes(&state.db_wrapper, num).await {
-        Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
+    match get_notes(&state.db_wrapper, query.num.unwrap_or(10)).await {
+        Ok(notes) => {
+            let response_notes: Vec<ResponseNote> = notes.into_iter()
+                .map(|note| {
+                    let file_url = state.env_vars.paths.get_note_url(&format!("{}.pdf", note.note_id)).unwrap();
+                    ResponseNote::from_note_with_user(note, file_url)
+                })
+                .collect();
+            Ok((StatusCode::OK, Json(response_notes).into_response()))
+        },
         Err(err) => Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err.into()).into()),
     }
 }
@@ -32,7 +44,11 @@ pub async fn note_by_id(
 ) -> Result<(StatusCode, Response), AppError> {
     tracing::debug!("Fetching note with ID: {}", note_id);
     match get_note_by_id(&state.db_wrapper, note_id).await {
-        Ok(note) => Ok((StatusCode::OK, Json(note).into_response())),
+        Ok(note) => {
+            let file_url = state.env_vars.paths.get_note_url(&format!("{}.pdf", note.note_id)).unwrap();
+            let response_note = ResponseNote::from_note_with_user(note, file_url);
+            Ok((StatusCode::OK, Json(response_note).into_response()))
+        },
         Err(err) => {
             tracing::error!("Failed to fetch note: {:?}", err);
             Err(NoteError::DatabaseError("Failed to fetch note".to_string(), err.into()).into())
@@ -201,5 +217,5 @@ pub async fn upload_note(
             tx.rollback().await.map_err(|_| NoteError::UploadFailed("Failed to rollback database".to_string()))?;
             Err(NoteError::UploadFailed("Failed to save file".to_string()))?
         }
-    } 
+    }
 }

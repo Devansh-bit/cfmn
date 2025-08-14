@@ -27,6 +27,26 @@ pub struct Note {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NoteWithUser {
+    pub note_id: Uuid,
+    pub note_course_name: String,
+    pub note_course_code: String,
+    pub note_description: Option<String>,
+    pub note_professor_names: Option<Vec<String>>,
+    pub note_tags: Vec<String>,
+    pub note_is_public: bool,
+    pub note_has_preview_image: bool,
+    pub note_uploader_user_id: Uuid,
+    pub note_created_at: DateTime<Utc>,
+    pub user_id: Uuid,
+    pub user_google_id: String,
+    pub user_email: String,
+    pub user_full_name: String,
+    pub user_reputation: i32,
+    pub user_created_at: DateTime<Utc>,
+}
+
 #[derive(Serialize, Deserialize, Debug, sqlx::FromRow)]
 pub struct Vote {
     pub id: Uuid,

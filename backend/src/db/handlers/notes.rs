@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::db::DBPoolWrapper;
-use crate::db::models::Note;
+use crate::db::models::{Note, NoteWithUser, User};
+
 use crate::api::models::CreateNote;
 
 /// Inserts a new note record into the database.
@@ -32,12 +34,36 @@ pub async fn create_note(
     Ok((tx, note))
 }
 
-/// Fetches all note records from the database.
-pub async fn get_all_notes(db_wrapper: &DBPoolWrapper, num_notes: usize) -> Result<Vec<Note>, sqlx::Error> {
+pub async fn get_notes(db_wrapper: &DBPoolWrapper, num_notes: usize) -> Result<Vec<NoteWithUser>, sqlx::Error> {
     let notes = sqlx::query_as!(
-        Note,
-        "SELECT * FROM notes ORDER BY created_at DESC LIMIT $1 ",
-        num_notes as i64  // Convert usize to i64 for SQL compatibility
+        NoteWithUser,
+        r#"
+        SELECT
+            n.id as "note_id!",
+            n.course_name as "note_course_name!",
+            n.course_code as "note_course_code!",
+            n.description as "note_description",
+            n.professor_names as "note_professor_names",
+            n.tags as "note_tags!",
+            n.is_public as "note_is_public!",
+            n.has_preview_image as "note_has_preview_image!",
+            n.uploader_user_id as "note_uploader_user_id!",
+            n.created_at as "note_created_at!",
+            u.id as "user_id!",
+            u.google_id as "user_google_id!",
+            u.email as "user_email!",
+            u.full_name as "user_full_name!",
+            u.reputation as "user_reputation!",
+            u.created_at as "user_created_at!"
+        FROM
+            notes n
+        JOIN
+            users u ON n.uploader_user_id = u.id
+        ORDER BY
+            n.created_at DESC
+        LIMIT $1
+        "#,
+        num_notes as i64
     )
         .fetch_all(db_wrapper.pool())
         .await?;
@@ -67,13 +93,36 @@ pub async fn search_notes_by_query(
 pub async fn get_note_by_id(
     db_wrapper: &DBPoolWrapper,
     note_id: Uuid,
-) -> Result<Note, sqlx::Error> {
-    let note = sqlx::query_as!(
-        Note,
-        "SELECT * FROM notes WHERE id = $1",
+) -> Result<NoteWithUser, sqlx::Error> {
+    let note_with_user = sqlx::query_as!(
+        NoteWithUser,
+        r#"
+        SELECT
+            n.id as "note_id!",
+            n.course_name as "note_course_name!",
+            n.course_code as "note_course_code!",
+            n.description as "note_description",
+            n.professor_names as "note_professor_names",
+            n.tags as "note_tags!",
+            n.is_public as "note_is_public!",
+            n.has_preview_image as "note_has_preview_image!",
+            n.uploader_user_id as "note_uploader_user_id!",
+            n.created_at as "note_created_at!",
+            u.id as "user_id!",
+            u.google_id as "user_google_id!",
+            u.email as "user_email!",
+            u.full_name as "user_full_name!",
+            u.reputation as "user_reputation!",
+            u.created_at as "user_created_at!"
+        FROM
+            notes n
+        JOIN
+            users u ON n.uploader_user_id = u.id
+        WHERE n.id = $1
+        "#,
         note_id
     )
         .fetch_one(db_wrapper.pool())
         .await?;
-    Ok(note)
+    Ok(note_with_user)
 }
