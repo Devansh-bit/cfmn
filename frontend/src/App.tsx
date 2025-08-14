@@ -1,5 +1,5 @@
 // App.tsx - Fixed to prevent duplicate rendering
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
@@ -14,38 +14,24 @@ const AppContent: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const loadNotes = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const fetchedNotes = await notesApi.getNotes(12);
+            setNotes(fetchedNotes);
+        } catch (err) {
+            setError('Failed to load notes. Please try again later.');
+            console.error('Failed to load notes:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     // Load initial notes
     useEffect(() => {
-        let isMounted = true; // Flag to prevent state updates if component unmounts
-
-        const loadNotes = async () => {
-            try {
-                if (!isMounted) return;
-                setLoading(true);
-                setError(null);
-                const fetchedNotes = await notesApi.getNotes(12);
-                if (isMounted) {
-                    setNotes(fetchedNotes);
-                }
-            } catch (err) {
-                if (isMounted) {
-                    setError('Failed to load notes. Please try again later.');
-                    console.error('Failed to load notes:', err);
-                }
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-            }
-        };
-
         loadNotes();
-
-        // Cleanup function
-        return () => {
-            isMounted = false;
-        };
-    }, []);
+    }, [loadNotes]);
 
     // Handle search
     const handleSearchChange = async (query: string): Promise<void> => {
@@ -78,39 +64,39 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header onNoteUploaded={handleNoteUploaded} />
+            <AuthProvider onSignIn={loadNotes}>
+                <Header onNoteUploaded={handleNoteUploaded} />
 
-            <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-8">
-                    <SearchBar searchQuery={searchQuery} onSearchChange={handleSearchChange} />
-                </div>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                        {error}
+                <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="mb-8">
+                        <SearchBar searchQuery={searchQuery} onSearchChange={handleSearchChange} />
                     </div>
-                )}
 
-                {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                        <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="ml-3 text-gray-600">Loading notes...</span>
-                    </div>
-                ) : (
-                    <CourseGrid notes={notes} />
-                )}
-            </main>
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            {error}
+                        </div>
+                    )}
 
-            <Footer />
+                    {loading ? (
+                        <div className="flex justify-center items-center py-12">
+                            <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="ml-3 text-gray-600">Loading notes...</span>
+                        </div>
+                    ) : (
+                        <CourseGrid notes={notes} />
+                    )}
+                </main>
+
+                <Footer />
+            </AuthProvider>
         </div>
     );
 };
 
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <AppContent />
     );
 };
 

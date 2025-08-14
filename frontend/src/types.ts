@@ -1,3 +1,5 @@
+// frontend/src/types.ts
+
 import type {ReactNode} from 'react';
 
 export interface ResponseUser {
@@ -78,4 +80,5 @@ export interface AuthContextType {
     promptSignIn?: () => void; // Add this optional method
     googleInitialized: boolean; // Add this
     googleScriptLoaded: boolean; // Add this
+    onSignIn?: () => void;
 }

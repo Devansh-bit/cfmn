@@ -1,4 +1,4 @@
-// AuthContext.tsx - Fixed version to prevent logout on refresh
+// frontend/src/contexts/AuthContext.tsx - Fixed version to prevent logout on refresh
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { AuthUser, AuthContextType } from '../types';
 
@@ -14,6 +14,7 @@ export const useAuth = (): AuthContextType => {
 
 interface AuthProviderProps {
     children: ReactNode;
+    onSignIn?: () => void;
 }
 
 declare global {
@@ -36,7 +37,7 @@ declare global {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [googleInitialized, setGoogleInitialized] = useState(false);
@@ -196,6 +197,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (data.token && data.user) {
                     localStorage.setItem('auth_token', data.token);
                     setUser(data.user);
+                    if (onSignIn) {
+                        onSignIn();
+                    }
                     console.log('Authentication successful:', data.user);
                 } else {
                     throw new Error('Invalid response format from server');
@@ -297,6 +301,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             console.log('Signed out successfully');
+            window.location.reload();
         } catch (error) {
             console.error('Sign out error:', error);
             localStorage.removeItem('auth_token');
