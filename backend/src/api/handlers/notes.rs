@@ -72,9 +72,16 @@ pub async fn search_notes(
             NoteError::InvalidData("Query cannot be empty".to_string()).into(),
         );
     }
-
     match search_notes_by_query(&state.db_wrapper, &query.query).await {
-        Ok(notes) => Ok((StatusCode::OK, Json(notes).into_response())),
+        Ok(notes) => {
+            let response_notes: Vec<ResponseNote> = notes.into_iter()
+                .map(|note| {
+                    let file_url = state.env_vars.paths.get_note_url(&format!("{}.pdf", note.note_id)).unwrap();
+                    ResponseNote::from_note_with_user(note, file_url)
+                })
+                .collect();
+            Ok((StatusCode::OK, Json(response_notes).into_response()))
+        },
         Err(err) => {
             Err(NoteError::DatabaseError("Failed to fetch notes".to_string(), err.into()).into())
         }
@@ -186,6 +193,27 @@ pub async fn upload_note(
         |err| NoteError::DatabaseError("Failed to create note".to_string(), err.into()),
     )?;
 
+    let note_with_user = ResponseNote {
+        id:    note.id,
+        course_name: note.course_name,
+        course_code: note.course_code,
+        description: note.description,
+        professor_names: note.professor_names,
+        tags: note.tags,
+        is_public: note.is_public,
+        preview_image_url: None, // TODO: Handle preview image
+        file_url: state.env_vars.paths.get_note_url(&format!("{}.pdf", note.id)).unwrap(),
+        uploader_user: ResponseUser {
+            id: user.id,
+            google_id: user.google_id.clone(),
+            email: user.email.clone(),
+            full_name: user.full_name.clone(),
+            reputation: user.reputation,
+            created_at: user.created_at,
+        },
+        created_at: note.created_at,
+    };
+
     // Create the file slug/path (similar to IQPS)
     let file_slug = state
         .env_vars
@@ -208,7 +236,7 @@ pub async fn upload_note(
         // Write the file data (following IQPS pattern)
         if fs::write(&file_path, &file_bytes).await.is_ok() {
             if tx.commit().await.is_ok() {
-                Ok((StatusCode::CREATED, Json(note).into_response()))
+                Ok((StatusCode::CREATED, Json(note_with_user).into_response()))
             } else {
                 let _ = fs::remove_file(file_path).await;
                 Err(NoteError::UploadFailed("Failed to save note to database".to_string()))?
