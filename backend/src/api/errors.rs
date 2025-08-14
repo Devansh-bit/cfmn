@@ -101,6 +101,7 @@ pub enum NoteError {
     InvalidData(String),
     UploadFailed(String),
     DatabaseError(String, Box<dyn std::error::Error>),
+    BadVote(String),
 }
 
 impl From<NoteError> for AppError {
@@ -121,6 +122,7 @@ impl IntoResponse for NoteError {
                     msg,
                 )
             }
+            NoteError::BadVote(msg) => (StatusCode::BAD_REQUEST, msg),
         };
 
         (status, Json(json!({ "error": error_message }))).into_response()

@@ -1,9 +1,9 @@
-// CourseCard.tsx - Updated with light purple background placeholder
+// CourseCard.tsx - Fixed with proper boolean/null vote handling
 import React, { useState } from 'react';
 import { Download, ThumbsUp, ThumbsDown, Edit, FileText } from 'lucide-react';
 import { useSignInFlow } from '../hooks/useSignInFlow';
 import SignInModal from './SignInModal';
-import type { CourseCardProps } from '../types';
+import type { CourseCardProps, VoteType } from '../types';
 import { notesApi } from '../api/notesApi';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,9 +17,21 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
         modalOptions
     } = useSignInFlow();
 
-    const [isLiked, setIsLiked] = useState(false);
-    const [isDisliked, setIsDisliked] = useState(false);
-    const [likeCount, setLikeCount] = useState(0);
+    // Convert boolean vote to string format for internal state
+    // note.user_vote: true = upvote, false = downvote, null = no vote
+    const convertVoteToString = (vote: boolean | null): 'upvote' | 'downvote' | null => {
+        if (vote === true) return 'upvote';
+        if (vote === false) return 'downvote';
+        return null;
+    };
+
+    // Vote states - properly handle boolean from API
+    const [userVote, setUserVote] = useState<'upvote' | 'downvote' | null>(
+        convertVoteToString(note.user_vote)
+    );
+    const [upvoteCount, setUpvoteCount] = useState(note.upvotes || 0);
+    const [downvoteCount, setDownvoteCount] = useState(note.downvotes || 0);
+    const [isVoting, setIsVoting] = useState(false);
     const [imageError, setImageError] = useState(false);
 
     const isOwner = user && note.uploader_user.id === user.id;
@@ -55,6 +67,71 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
         return { visibleTags, remainingCount };
     };
 
+    // Updated voting function with proper boolean handling
+    const handleVote = async (voteType: 'upvote' | 'downvote') => {
+        if (isVoting) return;
+
+        requireAuth(voteType, async () => {
+            setIsVoting(true);
+
+            // Store previous state for rollback BEFORE try block
+            const previousVote = userVote;
+            const previousUpvoteCount = upvoteCount;
+            const previousDownvoteCount = downvoteCount;
+
+            try {
+                let actualVoteType: VoteType;
+
+                // Determine the actual vote type to send
+                if (userVote === voteType) {
+                    // User is clicking the same vote - remove it
+                    actualVoteType = 'remove';
+                } else {
+                    // User is voting or changing vote
+                    actualVoteType = voteType;
+                }
+
+                // Update UI optimistically
+                if (actualVoteType === 'remove') {
+                    setUserVote(null);
+                    if (previousVote === 'upvote') {
+                        setUpvoteCount(prev => Math.max(0, prev - 1));
+                    } else if (previousVote === 'downvote') {
+                        setDownvoteCount(prev => Math.max(0, prev - 1));
+                    }
+                } else if (actualVoteType === 'upvote') {
+                    setUserVote('upvote');
+                    setUpvoteCount(prev => prev + 1);
+                    if (previousVote === 'downvote') {
+                        setDownvoteCount(prev => Math.max(0, prev - 1));
+                    }
+                } else if (actualVoteType === 'downvote') {
+                    setUserVote('downvote');
+                    setDownvoteCount(prev => prev + 1);
+                    if (previousVote === 'upvote') {
+                        setUpvoteCount(prev => Math.max(0, prev - 1));
+                    }
+                }
+
+                // Make API call
+                await notesApi.voteOnNote(note.id, actualVoteType);
+
+                console.log(`${actualVoteType === 'remove' ? 'Removed vote' : actualVoteType} for ${note.course_name}`);
+
+            } catch (error) {
+                // Rollback optimistic update on error
+                setUserVote(previousVote);
+                setUpvoteCount(previousUpvoteCount);
+                setDownvoteCount(previousDownvoteCount);
+
+                console.error('Vote failed:', error);
+                alert('Failed to vote. Please try again.');
+            } finally {
+                setIsVoting(false);
+            }
+        });
+    };
+
     const handleDownload = () => requireAuth('download', () => {
         try {
             notesApi.downloadNote(note);
@@ -63,31 +140,6 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
             console.error('Download failed:', error);
             alert('Failed to download file. Please try again.');
         }
-    });
-
-    const handleLike = () => requireAuth('like', () => {
-        if (isLiked) {
-            setIsLiked(false);
-            setLikeCount(prev => prev - 1);
-        } else {
-            setIsLiked(true);
-            setIsDisliked(false);
-            setLikeCount(prev => prev + 1);
-        }
-        console.log(`${isLiked ? 'Unliked' : 'Liked'} notes for ${note.course_name}`);
-    });
-
-    const handleDislike = () => requireAuth('dislike', () => {
-        if (isDisliked) {
-            setIsDisliked(false);
-        } else {
-            setIsDisliked(true);
-            if (isLiked) {
-                setIsLiked(false);
-                setLikeCount(prev => prev - 1);
-            }
-        }
-        console.log(`${isDisliked ? 'Removed dislike' : 'Disliked'} notes for ${note.course_name}`);
     });
 
     const handleEdit = () => requireAuth('edit', () => {
@@ -138,9 +190,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                 <div className="p-5">
                     {/* Header */}
                     <div className="mb-3">
-            <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide bg-purple-50 px-2 py-1 rounded">
-              {note.course_code}
-            </span>
+                        <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide bg-purple-50 px-2 py-1 rounded">
+                            {note.course_code}
+                        </span>
                         <h3 className="text-lg font-semibold text-gray-900 mt-2 leading-tight">
                             {note.course_name}
                         </h3>
@@ -168,13 +220,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                                         key={index}
                                         className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full"
                                     >
-          {tag}
-        </span>
+                                        {tag}
+                                    </span>
                                 ))}
                                 {remainingCount > 0 && (
                                     <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-          +{remainingCount} more
-        </span>
+                                        +{remainingCount} more
+                                    </span>
                                 )}
                             </div>
                         ) : (
@@ -187,35 +239,48 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                         <p className="text-sm text-gray-500 mb-4 flex items-center">
                             <span className="text-gray-400 mr-1">Prof:</span>
                             <span className="truncate">
-                {note.professor_names.join(', ')}
-              </span>
+                                {note.professor_names.join(', ')}
+                            </span>
                         </p>
                     )}
 
-                    {/* Actions Bar */}
+                    {/* Actions Bar - Updated with proper voting */}
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <div className="flex items-center space-x-4">
+                            {/* Upvote Button */}
                             <button
-                                onClick={handleLike}
-                                className={`flex items-center space-x-1 transition-colors duration-200 ${
-                                    isLiked
-                                        ? 'text-purple-600'
-                                        : 'text-gray-500 hover:text-purple-600'
-                                }`}
+                                onClick={() => handleVote('upvote')}
+                                disabled={isVoting}
+                                className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
+                                    userVote === 'upvote'
+                                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                                        : 'text-gray-500 hover:text-green-600 hover:bg-gray-100'
+                                } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title="Upvote"
                             >
-                                <ThumbsUp size={16} fill={isLiked ? 'currentColor' : 'none'} />
-                                <span className="text-sm font-medium">{likeCount}</span>
+                                <ThumbsUp
+                                    size={16}
+                                    fill={userVote === 'upvote' ? 'currentColor' : 'none'}
+                                />
+                                <span>{upvoteCount}</span>
                             </button>
 
+                            {/* Downvote Button */}
                             <button
-                                onClick={handleDislike}
-                                className={`transition-colors duration-200 ${
-                                    isDisliked
-                                        ? 'text-red-600'
-                                        : 'text-gray-500 hover:text-red-600'
-                                }`}
+                                onClick={() => handleVote('downvote')}
+                                disabled={isVoting}
+                                className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${
+                                    userVote === 'downvote'
+                                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                                        : 'text-gray-500 hover:text-red-600 hover:bg-gray-100'
+                                } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title="Downvote"
                             >
-                                <ThumbsDown size={16} fill={isDisliked ? 'currentColor' : 'none'} />
+                                <ThumbsDown
+                                    size={16}
+                                    fill={userVote === 'downvote' ? 'currentColor' : 'none'}
+                                />
+                                <span>{downvoteCount}</span>
                             </button>
                         </div>
 

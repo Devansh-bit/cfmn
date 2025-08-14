@@ -22,9 +22,10 @@ pub struct NoteQuery {
 /// API handler to list all notes.
 pub async fn list_notes(
     State(state): State<RouterState>,
+    Extension(user): Extension<Option<User>>,
     Query(query): Query<NoteQuery>,
 ) -> Result<(StatusCode, Response), AppError> {
-    match get_notes(&state.db_wrapper, query.num.unwrap_or(10)).await {
+    match get_notes(&state.db_wrapper, query.num.unwrap_or(10), user.as_ref().map(|u| u.id)).await {
         Ok(notes) => {
             let response_notes: Vec<ResponseNote> = notes.into_iter()
                 .map(|note| {
@@ -40,10 +41,11 @@ pub async fn list_notes(
 
 pub async fn note_by_id(
     State(state): State<RouterState>,
+    Extension(user): Extension<Option<User>>,
     Path(note_id): Path<Uuid>,
 ) -> Result<(StatusCode, Response), AppError> {
     tracing::debug!("Fetching note with ID: {}", note_id);
-    match get_note_by_id(&state.db_wrapper, note_id).await {
+    match get_note_by_id(&state.db_wrapper, note_id, user.as_ref().map(|u| u.id)).await {
         Ok(note) => {
             let file_url = state.env_vars.paths.get_note_url(&format!("{}.pdf", note.note_id)).unwrap();
             let response_note = ResponseNote::from_note_with_user(note, file_url);
@@ -64,6 +66,7 @@ pub struct SearchQuery {
 
 pub async fn search_notes(
     State(state): State<RouterState>,
+    Extension(user): Extension<Option<User>>,
     Query(query): Query<SearchQuery>,
 ) -> Result<(StatusCode, Response), AppError> {
     tracing::debug!("Search query: {:?}", query.query);
@@ -72,7 +75,7 @@ pub async fn search_notes(
             NoteError::InvalidData("Query cannot be empty".to_string()).into(),
         );
     }
-    match search_notes_by_query(&state.db_wrapper, &query.query).await {
+    match search_notes_by_query(&state.db_wrapper, &query.query, user.as_ref().map(|u| u.id)).await {
         Ok(notes) => {
             let response_notes: Vec<ResponseNote> = notes.into_iter()
                 .map(|note| {
@@ -203,6 +206,9 @@ pub async fn upload_note(
         is_public: note.is_public,
         preview_image_url: None, // TODO: Handle preview image
         file_url: state.env_vars.paths.get_note_url(&format!("{}.pdf", note.id)).unwrap(),
+        upvotes: 0,
+        downvotes: 0,
+        user_vote: None,
         uploader_user: ResponseUser {
             id: user.id,
             google_id: user.google_id.clone(),

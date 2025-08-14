@@ -4,6 +4,15 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
+pub struct DBVote {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub note_id: Uuid,
+    pub is_upvote: bool,
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
 pub struct User {
     pub id: Uuid,
     pub google_id: String,
@@ -39,6 +48,9 @@ pub struct NoteWithUser {
     pub note_has_preview_image: bool,
     pub note_uploader_user_id: Uuid,
     pub note_created_at: DateTime<Utc>,
+    pub note_upvote_count: i64,
+    pub note_downvote_count: i64,
+    pub note_user_upvote: Option<bool>,
     pub user_id: Uuid,
     pub user_google_id: String,
     pub user_email: String,

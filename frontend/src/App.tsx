@@ -1,4 +1,4 @@
-// App.tsx - Updated to handle new uploads
+// App.tsx - Fixed to prevent duplicate rendering
 import React, { useState, useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
@@ -16,21 +16,35 @@ const AppContent: React.FC = () => {
 
     // Load initial notes
     useEffect(() => {
+        let isMounted = true; // Flag to prevent state updates if component unmounts
+
         const loadNotes = async () => {
             try {
+                if (!isMounted) return;
                 setLoading(true);
                 setError(null);
                 const fetchedNotes = await notesApi.getNotes(12);
-                setNotes(fetchedNotes);
+                if (isMounted) {
+                    setNotes(fetchedNotes);
+                }
             } catch (err) {
-                setError('Failed to load notes. Please try again later.');
-                console.error('Failed to load notes:', err);
+                if (isMounted) {
+                    setError('Failed to load notes. Please try again later.');
+                    console.error('Failed to load notes:', err);
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
         loadNotes();
+
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     // Handle search

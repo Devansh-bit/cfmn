@@ -12,7 +12,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use std::str::FromStr;
 
 #[derive(Clone)]
-pub(super) struct RouterState {
+pub(crate) struct RouterState {
     pub db_wrapper: DBPoolWrapper,
     pub env_vars: EnvVars
 }
@@ -25,21 +25,32 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
 
     let protected_router = Router::new()
         .route("/notes/upload", post(handlers::notes::upload_note))
-        // We will implement vote routes later
+        .route("/notes/{note_id}/vote", post(handlers::votes::add_vote))
+        .route("/auth/me", get(handlers::auth::get_current_user))
         .route_layer(from_fn_with_state(
             state.clone(),
             auth::verify_token_middleware,
         ));
 
-    let public_router = Router::new()
-        .route("/", get(handlers::misc::index))
+    let optional_user_router = Router::new()
         .route("/notes", get(handlers::notes::list_notes))
         .route("/notes/search", get(handlers::notes::search_notes))
         .route("/notes/{note_id}", get(handlers::notes::note_by_id))
+        .route_layer(from_fn_with_state(
+            state.clone(),
+            auth::optional_auth_middleware,
+        ));
+
+    let public_router = Router::new()
+        .route("/", get(handlers::misc::index))
         .route("/auth/google", post(handlers::auth::google_auth_callback))
         ;
 
-    let api_router = Router::new().merge(public_router).merge(protected_router);
+    // Merge all three routers together
+    let api_router = Router::new()
+        .merge(public_router)
+        .merge(protected_router)
+        .merge(optional_user_router);
 
     Router::new()
         .nest("/api", api_router)

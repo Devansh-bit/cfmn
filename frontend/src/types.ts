@@ -9,6 +9,15 @@ export interface ResponseUser {
     created_at: string;
 }
 
+export type VoteType = 'upvote' | 'downvote' | 'remove';
+export interface DBVote {
+    id: string;
+    user_id: string;
+    note_id: string;
+    is_upvote: boolean;
+    created_at: string | null;
+}
+
 export interface ResponseNote {
     id: string;
     course_name: string;
@@ -21,6 +30,9 @@ export interface ResponseNote {
     file_url: string;
     uploader_user: ResponseUser;
     created_at: string;
+    upvotes: number;
+    downvotes: number;
+    user_vote: boolean | null; // Optional, can be null if user hasn't voted or isnt authenticated
 }
 
 // Keep existing types for component props

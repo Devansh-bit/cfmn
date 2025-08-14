@@ -1,4 +1,4 @@
-import type { ResponseNote } from "../types.ts";
+import type { ResponseNote, DBVote, VoteType } from "../types.ts";
 import { authenticatedFetch } from "./authApi.ts";
 
 class NotesAPI {
@@ -32,6 +32,39 @@ class NotesAPI {
     async searchNotes(query: string): Promise<ResponseNote[]> {
         const url = `/api/notes/search?query=${encodeURIComponent(query)}`;
         return this.fetchWithErrorHandling(url);
+    }
+
+    // POST /api/notes/:note_id/vote?vote_type=type - Vote on a note
+    async voteOnNote(noteId: string, voteType: VoteType): Promise<DBVote | null> {
+        const url = `/api/notes/${noteId}/vote?vote_type=${voteType}`;
+
+        try {
+            const response = await authenticatedFetch(url, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Vote failed: ${response.status}`);
+            }
+
+            // Check if the response has content
+            const contentLength = response.headers.get('content-length');
+            if (contentLength === '0' || response.status === 204) {
+                // No content returned (successful vote with no data)
+                return null;
+            }
+
+            // Try to parse JSON response
+            const responseText = await response.text();
+            if (!responseText.trim()) {
+                return null;
+            }
+
+            return JSON.parse(responseText);
+        } catch (error) {
+            console.error('Vote request failed:', error);
+            throw error;
+        }
     }
 
     // POST /api/notes - Create a new note

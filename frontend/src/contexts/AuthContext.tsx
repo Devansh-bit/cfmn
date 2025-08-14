@@ -1,4 +1,4 @@
-// AuthContext.tsx
+// AuthContext.tsx - Fixed version to prevent logout on refresh
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { AuthUser, AuthContextType } from '../types';
 
@@ -29,7 +29,7 @@ declare global {
                 };
             };
         };
-        googleAuthReady?: boolean; // Add this flag
+        googleAuthReady?: boolean;
     }
 }
 
@@ -43,37 +43,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
     const isAuthenticated = !!user;
 
-    // Check authentication status on mount
+    // Check authentication status on mount - with better error handling
     useEffect(() => {
-        checkAuthStatus();
+        let isMounted = true;
 
-        // Cancel any existing One Tap prompts on mount
-        const cancelOneTap = () => {
-            if (window.google && window.google.accounts && window.google.accounts.id) {
-                try {
-                    window.google.accounts.id.cancel();
-                    window.google.accounts.id.disableAutoSelect();
-                } catch (error) {
-                    console.log('Could not cancel One Tap (not yet loaded):', error);
-                }
+        const runAuthCheck = async () => {
+            if (isMounted) {
+                await checkAuthStatus();
             }
         };
 
-        // Try to cancel immediately
-        cancelOneTap();
+        runAuthCheck();
 
-        // Also try after a short delay in case Google script loads later
-        const timeoutId = setTimeout(cancelOneTap, 1000);
-
-        return () => clearTimeout(timeoutId);
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
-    // Initialize Google OAuth
+    // Initialize Google OAuth - only once per session
     useEffect(() => {
+        let isMounted = true;
         let scriptCleanup: (() => void) | null = null;
 
+        // Check if Google script is already loaded to avoid reloading
+        if (window.google && window.googleAuthReady) {
+            setGoogleScriptLoaded(true);
+            setGoogleInitialized(true);
+            return;
+        }
+
         const initializeGoogleAuth = () => {
-            if (window.google && GOOGLE_CLIENT_ID && !googleInitialized) {
+            if (window.google && GOOGLE_CLIENT_ID && !googleInitialized && isMounted) {
                 try {
                     console.log('Initializing Google Auth with client ID:', GOOGLE_CLIENT_ID);
 
@@ -83,19 +83,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         auto_select: false,
                         cancel_on_tap_outside: true,
                         use_fedcm_for_prompt: false,
-                        ux_mode: 'popup', // Force popup mode instead of redirect
-                        context: 'signin', // Specify context
+                        ux_mode: 'popup',
+                        context: 'signin',
                     });
 
-                    // Disable One Tap to prevent automatic popup
-                    window.google.accounts.id.disableAutoSelect();
+                    // Only disable auto-select if user is not already authenticated
+                    if (!user) {
+                        window.google.accounts.id.disableAutoSelect();
+                    }
 
-                    setGoogleInitialized(true);
-                    window.googleAuthReady = true; // Set global flag
-                    console.log('Google Auth initialized successfully');
-
-                    // Trigger a custom event to notify components
-                    window.dispatchEvent(new CustomEvent('googleAuthReady'));
+                    if (isMounted) {
+                        setGoogleInitialized(true);
+                        window.googleAuthReady = true;
+                        console.log('Google Auth initialized successfully');
+                        window.dispatchEvent(new CustomEvent('googleAuthReady'));
+                    }
                 } catch (error) {
                     console.error('Failed to initialize Google Auth:', error);
                 }
@@ -103,12 +105,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         const loadGoogleScript = () => {
-            // Check if script already exists
+            if (!isMounted) return null;
+
             const existingScript = document.querySelector('script[src*="gsi/client"]');
             if (existingScript) {
                 console.log('Google script already loaded');
-                setGoogleScriptLoaded(true);
-                initializeGoogleAuth();
+                if (isMounted) {
+                    setGoogleScriptLoaded(true);
+                    initializeGoogleAuth();
+                }
                 return null;
             }
 
@@ -120,43 +125,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             script.onload = () => {
                 console.log('Google script loaded successfully');
-                setGoogleScriptLoaded(true);
-                // Add a delay to ensure Google services are ready
-                setTimeout(() => {
-                    initializeGoogleAuth();
-                }, 200);
+                if (isMounted) {
+                    setGoogleScriptLoaded(true);
+                    setTimeout(() => {
+                        if (isMounted) {
+                            initializeGoogleAuth();
+                        }
+                    }, 200);
+                }
             };
 
             script.onerror = (error) => {
                 console.error('Failed to load Google Identity Services:', error);
-                setGoogleScriptLoaded(false);
+                if (isMounted) {
+                    setGoogleScriptLoaded(false);
+                }
             };
 
             document.head.appendChild(script);
 
-            // Return cleanup function
             return () => {
-                try {
-                    const scriptToRemove = document.querySelector('script[src*="gsi/client"]');
-                    if (scriptToRemove && scriptToRemove.parentNode) {
-                        scriptToRemove.parentNode.removeChild(scriptToRemove);
+                // Only cleanup if we're actually unmounting, not on refresh
+                if (document.readyState === 'complete' && !isMounted) {
+                    try {
+                        const scriptToRemove = document.querySelector('script[src*="gsi/client"]');
+                        if (scriptToRemove && scriptToRemove.parentNode) {
+                            scriptToRemove.parentNode.removeChild(scriptToRemove);
+                        }
+                        window.googleAuthReady = false;
+                    } catch (error) {
+                        console.warn('Failed to cleanup Google script:', error);
                     }
-                    window.googleAuthReady = false;
-                } catch (error) {
-                    console.warn('Failed to cleanup Google script:', error);
                 }
             };
         };
 
         scriptCleanup = loadGoogleScript();
 
-        // Cleanup function
         return () => {
+            isMounted = false;
             if (scriptCleanup) {
                 scriptCleanup();
             }
         };
-    }, [googleInitialized]);
+    }, [googleInitialized, user]);
 
     const handleCredentialResponse = async (response: any) => {
         if (!response.credential) {
@@ -195,8 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         } catch (error) {
             console.error('Authentication error:', error);
-            setUser(null);
-            localStorage.removeItem('auth_token');
+            // Don't immediately clear user state - let checkAuthStatus handle it
         } finally {
             setIsLoading(false);
         }
@@ -211,26 +222,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return;
             }
 
-            console.log('Checking authentication status...');
+            console.log('Checking authentication status...', API_BASE_URL);
+
+            // Validate API_BASE_URL
+            if (!API_BASE_URL) {
+                console.error('API_BASE_URL is not defined');
+                setIsLoading(false);
+                return;
+            }
+
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
             const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const userData = await response.json();
                 setUser(userData);
                 console.log('User authenticated:', userData);
-            } else {
+            } else if (response.status === 401 || response.status === 403) {
+                // Only clear auth on actual authentication failures
                 console.log('Token invalid or expired, clearing auth state');
                 localStorage.removeItem('auth_token');
                 setUser(null);
+            } else if (response.status === 404) {
+                // 404 likely means backend is down or endpoint doesn't exist
+                console.error('Auth endpoint not found (404). Check if backend is running and endpoint exists.');
+                // Keep token for now, but clear user state
+                setUser(null);
+            } else {
+                // For other server errors, keep existing state but log error
+                console.warn('Auth check failed with status:', response.status);
+                // Don't clear user state on server errors
             }
         } catch (error) {
             console.error('Auth check failed:', error);
-            localStorage.removeItem('auth_token');
-            setUser(null);
+
+            // Only clear auth state if it's a definitive authentication error
+            if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                console.warn('Network error during auth check - keeping existing state');
+            } else if (error.name === 'AbortError') {
+                console.warn('Auth check timed out - keeping existing state');
+            } else {
+                // Clear state only for non-network errors
+                localStorage.removeItem('auth_token');
+                setUser(null);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -264,8 +310,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated,
         signIn,
         signOut,
-        googleInitialized, // Add this to the context
-        googleScriptLoaded, // Add this to the context
+        googleInitialized,
+        googleScriptLoaded,
     };
 
     return (

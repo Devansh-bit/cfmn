@@ -38,6 +38,9 @@ pub struct ResponseNote {
     pub file_url: String,
     pub uploader_user: ResponseUser,
     pub created_at: DateTime<Utc>,
+    pub upvotes: usize,
+    pub downvotes: usize,
+    pub user_vote: Option<bool>, // If currently authenticated user has voted on this note
 }
 
 impl ResponseNote {
@@ -55,6 +58,9 @@ impl ResponseNote {
             is_public: note.note_is_public,
             preview_image_url: None, // TODO
             file_url,
+            upvotes: note.note_upvote_count as usize,
+            downvotes: note.note_downvote_count as usize,
+            user_vote: note.note_user_upvote,
             uploader_user: ResponseUser {
                 id: note.user_id,
                 google_id: note.user_google_id,

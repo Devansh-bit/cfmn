@@ -1,4 +1,4 @@
-mod handlers;
+pub(crate) mod handlers;
 pub(crate) mod router;
 pub(crate) mod errors;
 mod auth;

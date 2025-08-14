@@ -1,26 +1,16 @@
 // backend/src/api/auth.rs
 
+use crate::api::errors::{AppError, AuthError};
+use crate::api::router::RouterState;
+use crate::db;
+use crate::db::models::User;
+use axum::body::Body;
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
-use crate::api::router::RouterState;
-use axum_extra::extract::cookie::{Cookie, CookieJar};
-use hmac::{Hmac, Mac};
-use jwt::{SignWithKey, VerifyWithKey};
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
-use sha2::Sha256;
-use std::collections::BTreeMap;
-use axum::body::Body;
-use axum::{debug_handler, Json};
+use axum::response::Response;
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use crate::api::errors;
-use crate::api::errors::{AppError, AuthError};
-use crate::db;
-use crate::db::handlers::users::GoogleUserInfo;
-use crate::db::models::User;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppClaims {
@@ -45,12 +35,12 @@ pub async fn verify_token(token: &str, state: &RouterState) -> Result<Option<Use
     Ok(user)
 }
 
-
+// Mandatory authentication middleware (original behavior)
 pub(crate) async fn verify_token_middleware(
     State(state): State<RouterState>,
     mut request: Request<Body>,
     next: Next,
-) -> Result<Response, AppError> {
+) -> Result<Response<Body>, AppError> {
     // Look for Authorization header instead of cookie
     let auth_header = request
         .headers()
@@ -81,5 +71,47 @@ pub(crate) async fn verify_token_middleware(
             .unwrap());
     }
 
+    Ok(next.run(request).await)
+}
+
+// Optional authentication middleware (adds Option<User>)
+pub(crate) async fn optional_auth_middleware(
+    State(state): State<RouterState>,
+    mut request: Request<Body>,
+    next: Next,
+) -> Result<Response<Body>, AppError> {
+    // Look for Authorization header
+    let auth_header = request
+        .headers()
+        .get("authorization")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|header| header.strip_prefix("Bearer "));
+
+    let user_option = if let Some(token) = auth_header {
+        match verify_token(token, &state).await {
+            Ok(Some(user)) => {
+                tracing::debug!("Valid token found for user in optional middleware");
+                Some(user)
+            }
+            Ok(None) => {
+                tracing::debug!("Token verification failed in optional middleware");
+                None
+            }
+            Err(_) => {
+                tracing::debug!(
+                    "Token verification error in optional middleware, treating as no user"
+                );
+                None
+            }
+        }
+    } else {
+        tracing::debug!("No Authorization header found in optional middleware");
+        None
+    };
+
+    // Always insert Option<User> - either Some(user) or None
+    request.extensions_mut().insert(user_option);
+
+    // Always continue to next middleware/handler
     Ok(next.run(request).await)
 }

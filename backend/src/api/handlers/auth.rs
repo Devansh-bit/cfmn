@@ -5,7 +5,7 @@ use crate::db::handlers::users::{find_or_create_user, GoogleUserInfo};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
+use axum::{Extension, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::cookie::CookieJar;
 use chrono::{Duration, Utc};
@@ -14,6 +14,7 @@ use reqwest;
 use serde::Deserialize;
 use std::collections::{HashMap};
 use serde_json::json;
+use crate::db::models::User;
 
 #[derive(Deserialize)]
 pub struct AuthRequest {
@@ -151,4 +152,12 @@ pub async fn google_auth_callback(
         "token": token
     })))
 }
+
+pub async fn get_current_user(
+    State(_state): State<RouterState>,
+    Extension(user): Extension<User>,
+) -> Result<Response, AppError> {
+    Ok(Json(user).into_response())
+}
+
 
