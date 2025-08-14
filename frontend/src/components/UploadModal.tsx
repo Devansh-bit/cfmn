@@ -177,7 +177,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                   type="text"
                   value={formData.courseName}
                   onChange={(e) => handleInputChange('courseName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-dark-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="e.g., Data Structures and Algorithms"
                   required
               />
@@ -192,7 +192,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                   type="text"
                   value={formData.courseCode}
                   onChange={(e) => handleInputChange('courseCode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-dark-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="e.g., CS101"
                   required
               />
@@ -207,7 +207,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-dark-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="Brief description of the notes content..."
               />
             </div>
@@ -221,7 +221,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                   type="text"
                   value={formData.professorNames}
                   onChange={(e) => handleInputChange('professorNames', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-dark-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="e.g., Dr. Smith, Prof. Johnson (comma-separated)"
               />
             </div>
@@ -235,7 +235,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                   type="text"
                   value={formData.tags}
                   onChange={(e) => handleInputChange('tags', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-dark-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="e.g., algorithms, sorting, trees (comma-separated)"
               />
             </div>
@@ -248,8 +248,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
               <div
                   className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                       dragActive
-                          ? 'border-dark-primary bg-gray-800'
-                          : 'border-gray-700 hover:border-dark-primary'
+                          ? 'border-teal-400 bg-gray-800'
+                          : 'border-gray-700 hover:border-teal-400'
                   }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -273,7 +273,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                       <Upload size={40} className="mx-auto text-gray-500 mb-2" />
                       <p className="text-dark-text-secondary mb-2">
                         Drag and drop your PDF file here, or{' '}
-                        <label className="text-dark-primary cursor-pointer hover:underline">
+                        <label className="text-teal-400 cursor-pointer hover:underline">
                           browse
                           <input
                               type="file"
@@ -301,7 +301,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
               <button
                   type="submit"
                   disabled={isUploading}
-                  className="flex items-center space-x-2 bg-dark-primary hover:bg-opacity-80 disabled:bg-opacity-50 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  className="flex items-center space-x-2 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 {isUploading ? (
                     <>

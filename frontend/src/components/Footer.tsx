@@ -6,7 +6,7 @@ import type {TopicLinkProps} from '../types';
 const TopicLink: React.FC<TopicLinkProps> = ({ children }) => (
     <a
         href="#"
-        className="text-dark-text-secondary hover:text-dark-primary transition-colors block"
+        className="text-dark-text-secondary hover:text-teal-400 transition-colors block"
         onClick={(e) => e.preventDefault()}
     >
         {children}

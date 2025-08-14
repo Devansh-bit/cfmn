@@ -16,7 +16,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, onSearchChange }) =>
                         type="text"
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="flex-1 px-3 py-3 text-dark-text bg-dark-surface focus:outline-none focus:ring-2 focus:ring-dark-primary focus:ring-inset"
+                        className="flex-1 px-3 py-3 text-dark-text bg-dark-surface focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-inset"
                         placeholder="Search for courses..."
                     />
                     <button className="p-3 text-dark-text-secondary hover:text-dark-text transition-colors">

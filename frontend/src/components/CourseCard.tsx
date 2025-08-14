@@ -160,10 +160,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
     return (
         <>
             <div className="bg-dark-surface rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                {/* Preview Image with Light Purple Placeholder */}
+                {/* Preview Image with Placeholder */}
                 <div className="relative w-full h-48">
                     {shouldShowPlaceholder ? (
-                        // Light purple placeholder background
                         <div className="w-full h-full bg-gray-800 flex flex-col items-center justify-center">
                             <FileText className="text-gray-600 mb-2" size={32} />
                             <span className="text-gray-500 text-sm font-medium">Notes Preview</span>
@@ -181,7 +180,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                     {isOwner && (
                         <button
                             onClick={handleEdit}
-                            className="absolute top-3 right-3 bg-dark-surface bg-opacity-90 text-dark-text-secondary hover:text-dark-primary p-2 rounded-full shadow-md transition-colors duration-200"
+                            className="absolute top-3 right-3 bg-dark-surface bg-opacity-90 text-dark-text-secondary hover:text-teal-400 p-2 rounded-full shadow-md transition-colors duration-200"
                         >
                             <Edit size={16} />
                         </button>
@@ -192,7 +191,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                 <div className="p-5">
                     {/* Header */}
                     <div className="mb-3">
-                        <span className="text-xs font-semibold text-dark-primary uppercase tracking-wide bg-gray-800 px-2 py-1 rounded">
+                        <span className="text-xs font-semibold text-teal-400 uppercase tracking-wide bg-gray-800 px-2 py-1 rounded">
                             {note.course_code}
                         </span>
                         <h3 className="text-lg font-semibold text-dark-text mt-2 leading-tight">
@@ -299,7 +298,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                             </div>
                             <button
                                 onClick={handleDownload}
-                                className="flex items-center space-x-2 bg-dark-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors duration-200 text-sm font-medium shadow-sm"
+                                className="flex items-center space-x-2 bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors duration-200 text-sm font-medium shadow-sm"
                             >
                                 <span>View PDF</span>
                             </button>
