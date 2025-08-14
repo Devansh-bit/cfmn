@@ -19,7 +19,7 @@ pub struct EnvVars {
     pub file_size_limit: usize,
 
     // Paths
-    #[arg(env, default_value = "http://localhost:8081")]
+    #[arg(env, default_value = "http://localhost:3000")]
     /// The URL of the static files server (odin's vault)
     static_files_url: String,
     #[arg(env, default_value = "/home/exempl4r/coding/static")]

@@ -9,6 +9,7 @@ CREATE TABLE users (
                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+
 CREATE TABLE notes (
                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                        course_name VARCHAR(255) NOT NULL,
@@ -19,8 +20,10 @@ CREATE TABLE notes (
                        is_public BOOLEAN NOT NULL DEFAULT TRUE,
                        has_preview_image BOOLEAN NOT NULL DEFAULT FALSE,
                        uploader_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                       downloads INT NOT NULL DEFAULT 0
 );
+
 
 CREATE TABLE votes (
                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

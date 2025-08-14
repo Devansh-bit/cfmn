@@ -1,3 +1,5 @@
+// backend/src/api/router.rs
+
 use super::handlers;
 use crate::api::auth;
 use crate::db::DBPoolWrapper;
@@ -8,6 +10,7 @@ use axum::{
     routing::{get, post},
     Router
 };
+use tower_http::services::ServeDir;
 use tower_http::set_header::SetResponseHeaderLayer;
 use std::str::FromStr;
 
@@ -44,7 +47,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
     let public_router = Router::new()
         .route("/", get(handlers::misc::index))
         .route("/auth/google", post(handlers::auth::google_auth_callback))
-        ;
+        .route("/notes/{note_id}/download", get(handlers::notes::download_note));
 
     // Merge all three routers together
     let api_router = Router::new()
@@ -52,8 +55,11 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .merge(protected_router)
         .merge(optional_user_router);
 
+    let static_files_path = state.env_vars.paths.get_notes_dir().to_path_buf();
+
     Router::new()
         .nest("/api", api_router)
+        .nest_service("/notes/uploaded", ServeDir::new(static_files_path))
         .route("/", get(handlers::misc::serve_react_app))
         .with_state(state)
         // Add security headers using tower-http to remove google onetap

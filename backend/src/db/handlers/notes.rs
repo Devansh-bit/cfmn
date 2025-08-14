@@ -17,8 +17,8 @@ pub async fn update_note_preview_status(
         status,
         note_id
     )
-    .execute(&mut **tx)
-    .await?;
+        .execute(&mut **tx)
+        .await?;
 
     Ok(())
 }
@@ -35,7 +35,7 @@ pub async fn create_note(
         r#"
         INSERT INTO notes (course_name, course_code, description, professor_names, tags, has_preview_image, uploader_user_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, course_name, course_code, description, professor_names, tags, is_public, has_preview_image, uploader_user_id, created_at
+        RETURNING id, course_name, course_code, description, professor_names, tags, is_public, has_preview_image, uploader_user_id, created_at, downloads
         "#,
         new_note.course_name,
         new_note.course_code,
@@ -70,6 +70,7 @@ pub async fn get_notes(
             n.has_preview_image as "note_has_preview_image!",
             n.uploader_user_id as "note_uploader_user_id!",
             n.created_at as "note_created_at!",
+            n.downloads as "note_downloads!",
             COALESCE(upvote_counts.count, 0) as "note_upvote_count!",
             COALESCE(downvote_counts.count, 0) as "note_downvote_count!",
             user_vote.is_upvote as "note_user_upvote?",
@@ -102,8 +103,8 @@ pub async fn get_notes(
         num_notes as i64,
         current_user_id.as_ref()
     )
-    .fetch_all(db_wrapper.pool())
-    .await?;
+        .fetch_all(db_wrapper.pool())
+        .await?;
     Ok(notes)
 }
 /// Searches for notes where the title or description match the query.
@@ -127,6 +128,7 @@ pub async fn search_notes_by_query(
             n.has_preview_image as "note_has_preview_image!",
             n.uploader_user_id as "note_uploader_user_id!",
             n.created_at as "note_created_at!",
+            n.downloads as "note_downloads!",
             COALESCE(upvote_counts.count, 0) as "note_upvote_count!",
             COALESCE(downvote_counts.count, 0) as "note_downvote_count!",
             user_vote.is_upvote as "note_user_upvote?",
@@ -157,8 +159,8 @@ pub async fn search_notes_by_query(
         search_term,
         current_user_id.as_ref()
     )
-    .fetch_all(db_wrapper.pool())
-    .await?;
+        .fetch_all(db_wrapper.pool())
+        .await?;
     Ok(notes)
 }
 
@@ -181,6 +183,7 @@ pub async fn get_note_by_id(
         n.has_preview_image as "note_has_preview_image!",
         n.uploader_user_id as "note_uploader_user_id!",
         n.created_at as "note_created_at!",
+        n.downloads as "note_downloads!",
         COALESCE(upvote_counts.count, 0) as "note_upvote_count!",
         COALESCE(downvote_counts.count, 0) as "note_downvote_count!",
         user_vote.is_upvote as "note_user_upvote?",
@@ -195,14 +198,14 @@ pub async fn get_note_by_id(
     JOIN
         users u ON n.uploader_user_id = u.id
     LEFT JOIN
-        (SELECT note_id, COUNT(*) as count 
-         FROM votes 
-         WHERE is_upvote = true 
+        (SELECT note_id, COUNT(*) as count
+         FROM votes
+         WHERE is_upvote = true
          GROUP BY note_id) upvote_counts ON n.id = upvote_counts.note_id
     LEFT JOIN
-        (SELECT note_id, COUNT(*) as count 
-         FROM votes 
-         WHERE is_upvote = false 
+        (SELECT note_id, COUNT(*) as count
+         FROM votes
+         WHERE is_upvote = false
          GROUP BY note_id) downvote_counts ON n.id = downvote_counts.note_id
     LEFT JOIN
         votes user_vote ON n.id = user_vote.note_id AND user_vote.user_id = $2
@@ -211,7 +214,21 @@ pub async fn get_note_by_id(
         note_id,
         current_user_id.as_ref()
     )
-    .fetch_one(db_wrapper.pool())
-    .await?;
+        .fetch_one(db_wrapper.pool())
+        .await?;
     Ok(note_with_user)
+}
+
+pub async fn increment_note_downloads(
+    db_wrapper: &DBPoolWrapper,
+    note_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE notes SET downloads = downloads + 1 WHERE id = $1",
+        note_id
+    )
+        .execute(db_wrapper.pool())
+        .await?;
+
+    Ok(())
 }

@@ -34,6 +34,7 @@ pub struct Note {
     pub has_preview_image: bool,
     pub uploader_user_id: Uuid,
     pub created_at: DateTime<Utc>,
+    pub downloads: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -51,6 +52,7 @@ pub struct NoteWithUser {
     pub note_upvote_count: i64,
     pub note_downvote_count: i64,
     pub note_user_upvote: Option<bool>,
+    pub note_downloads: i64,
     pub user_id: Uuid,
     pub user_google_id: String,
     pub user_email: String,

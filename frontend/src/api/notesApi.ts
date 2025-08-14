@@ -122,14 +122,10 @@ class NotesAPI {
     }
 
     // Helper function to download a note (unchanged)
-    downloadNote(note: ResponseNote): void {
-        // Create a temporary link to trigger download
-        const link = document.createElement('a');
-        link.href = note.file_url;
-        link.download = `${note.course_code}_${note.course_name}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    async downloadNote(note: ResponseNote): Promise<void> {
+        const url = `/api/notes/${note.id}/download`;
+        await this.fetchWithErrorHandling(url);
+        window.open(note.file_url, '_blank');
     }
 }
 

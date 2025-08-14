@@ -41,6 +41,7 @@ pub struct ResponseNote {
     pub upvotes: usize,
     pub downvotes: usize,
     pub user_vote: Option<bool>, // If currently authenticated user has voted on this note
+    pub downloads: usize,
 }
 
 impl ResponseNote {
@@ -60,6 +61,7 @@ impl ResponseNote {
             file_url,
             upvotes: note.note_upvote_count as usize,
             downvotes: note.note_downvote_count as usize,
+            downloads: note.note_downloads as usize,
             user_vote: note.note_user_upvote,
             uploader_user: ResponseUser {
                 id: note.user_id,

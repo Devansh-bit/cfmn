@@ -31,6 +31,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
     );
     const [upvoteCount, setUpvoteCount] = useState(note.upvotes || 0);
     const [downvoteCount, setDownvoteCount] = useState(note.downvotes || 0);
+    const [downloadCount, setDownloadCount] = useState(note.downloads || 0);
     const [isVoting, setIsVoting] = useState(false);
     const [imageError, setImageError] = useState(false);
 
@@ -132,15 +133,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
         });
     };
 
-    const handleDownload = () => requireAuth('download', () => {
+    const handleDownload = async () => {
         try {
-            notesApi.downloadNote(note);
+            await notesApi.downloadNote(note);
+            setDownloadCount(prev => prev + 1);
             console.log(`Downloading notes for ${note.course_name}`);
         } catch (error) {
             console.error('Download failed:', error);
             alert('Failed to download file. Please try again.');
         }
-    });
+    };
 
     const handleEdit = () => requireAuth('edit', () => {
         console.log(`Editing notes for ${note.course_name}`);
@@ -235,14 +237,20 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                     </div>
 
                     {/* Professor Names */}
-                    {note.professor_names && note.professor_names.length > 0 && (
-                        <p className="text-sm text-gray-500 mb-4 flex items-center">
-                            <span className="text-gray-400 mr-1">Prof:</span>
-                            <span className="truncate">
-                                {note.professor_names.join(', ')}
-                            </span>
-                        </p>
-                    )}
+                    <div className="mb-4 h-5">
+                        {note.professor_names && note.professor_names.length > 0 ? (
+                            <p className="text-sm text-gray-500 flex items-center">
+                                <span className="text-gray-400 mr-1">Prof:</span>
+                                <span className="truncate">
+                                    {note.professor_names.join(', ')}
+                                </span>
+                            </p>
+                        ) : (
+                            <p className="text-sm text-gray-400 italic">
+                                No professors were specified
+                            </p>
+                        )}
+                    </div>
 
                     {/* Actions Bar - Updated with proper voting */}
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
@@ -284,13 +292,18 @@ const CourseCard: React.FC<CourseCardProps> = ({ note }) => {
                             </button>
                         </div>
 
-                        <button
-                            onClick={handleDownload}
-                            className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium shadow-sm"
-                        >
-                            <Download size={14} />
-                            <span>Download</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1 text-gray-500">
+                                <Download size={14} />
+                                <span>{downloadCount}</span>
+                            </div>
+                            <button
+                                onClick={handleDownload}
+                                className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-200 text-sm font-medium shadow-sm"
+                            >
+                                <span>View PDF</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

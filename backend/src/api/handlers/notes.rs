@@ -1,6 +1,6 @@
 use crate::api::errors::{AppError, NoteError};
 use crate::api::router::RouterState;
-use crate::db::handlers::notes::{create_note, get_notes, search_notes_by_query, get_note_by_id};
+use crate::db::handlers::notes::{create_note, get_notes, search_notes_by_query, get_note_by_id, increment_note_downloads};
 use axum::extract::{multipart::Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -196,6 +196,7 @@ pub async fn upload_note(
         |err| NoteError::DatabaseError("Failed to create note".to_string(), err.into()),
     )?;
 
+    let file_url = state.env_vars.paths.get_note_url(&format!("{}.pdf", note.id)).unwrap();
     let note_with_user = ResponseNote {
         id:    note.id,
         course_name: note.course_name,
@@ -208,6 +209,7 @@ pub async fn upload_note(
         file_url: state.env_vars.paths.get_note_url(&format!("{}.pdf", note.id)).unwrap(),
         upvotes: 0,
         downvotes: 0,
+        downloads: 0,
         user_vote: None,
         uploader_user: ResponseUser {
             id: user.id,
@@ -252,4 +254,21 @@ pub async fn upload_note(
             Err(NoteError::UploadFailed("Failed to save file".to_string()))?
         }
     }
+}
+
+
+pub async fn download_note(
+    State(state): State<RouterState>,
+    Path(note_id): Path<Uuid>,
+) -> Result<(StatusCode, Response), AppError> {
+    increment_note_downloads(&state.db_wrapper, note_id)
+        .await
+        .map_err(|err| {
+            NoteError::DatabaseError(
+                "Failed to increment note downloads".to_string(),
+                err.into(),
+            )
+        })?;
+
+    Ok((StatusCode::OK, "OK".into_response()))
 }

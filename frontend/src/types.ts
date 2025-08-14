@@ -35,6 +35,7 @@ export interface ResponseNote {
     upvotes: number;
     downvotes: number;
     user_vote: boolean | null; // Optional, can be null if user hasn't voted or isnt authenticated
+    downloads: number;
 }
 
 // Keep existing types for component props
