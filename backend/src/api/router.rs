@@ -6,9 +6,11 @@ use crate::db::DBPoolWrapper;
 use crate::env::EnvVars;
 use axum::middleware::from_fn_with_state;
 use axum::{
-    http::{HeaderName, HeaderValue},
-    routing::{get, post},
-    Router
+    http::{HeaderName, HeaderValue, StatusCode},
+    routing::{get, post, options},
+    Router,
+    response::Response,
+    body::Body,
 };
 use tower_http::services::ServeDir;
 use tower_http::set_header::SetResponseHeaderLayer;
@@ -20,12 +22,36 @@ pub(crate) struct RouterState {
     pub env_vars: EnvVars
 }
 
+// Handler for preflight OPTIONS requests
+async fn handle_options() -> Response<Body> {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD, OPTIONS")
+        .header("Access-Control-Allow-Headers", "content-type, authorization, accept, origin, x-requested-with")
+        .header("Access-Control-Max-Age", "86400") // Cache preflight for 24 hours
+        .body(Body::empty())
+        .unwrap()
+}
+
 pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
     let state = RouterState {
         db_wrapper,
         env_vars,
     };
 
+    // Handle OPTIONS requests FIRST, without any middleware
+    let options_router = Router::new()
+        .route("/notes/upload", options(handle_options))
+        .route("/notes/{note_id}/vote", options(handle_options))
+        .route("/auth/me", options(handle_options))
+        .route("/notes", options(handle_options))
+        .route("/notes/search", options(handle_options))
+        .route("/notes/{note_id}", options(handle_options))
+        .route("/auth/google", options(handle_options))
+        .route("/notes/{note_id}/download", options(handle_options));
+
+    // Protected routes WITHOUT options handlers
     let protected_router = Router::new()
         .route("/notes/upload", post(handlers::notes::upload_note))
         .route("/notes/{note_id}/vote", post(handlers::votes::add_vote))
@@ -49,12 +75,14 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/auth/google", post(handlers::auth::google_auth_callback))
         .route("/notes/{note_id}/download", get(handlers::notes::download_note));
 
-    // Merge all three routers together
+    // Merge routers with OPTIONS first (highest precedence)
     let api_router = Router::new()
+        .merge(options_router)  
         .merge(public_router)
         .merge(protected_router)
         .merge(optional_user_router);
 
+    // ... rest of your code remains the same
     let notes_path = state.env_vars.paths.get_notes_dir().to_path_buf();
     let images_path = state.env_vars.paths.get_previews_dir().to_path_buf();
 
@@ -64,17 +92,4 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .nest_service("/previews/uploaded", ServeDir::new(images_path))
         .route("/", get(handlers::misc::serve_react_app))
         .with_state(state)
-        // Add security headers using tower-http to remove google onetap
-        .layer(SetResponseHeaderLayer::overriding(
-            HeaderName::from_str("Permissions-Policy").unwrap(),
-            HeaderValue::from_str("identity-credentials-get=()").unwrap(),
-        ))
-        .layer(SetResponseHeaderLayer::overriding(
-            HeaderName::from_str("Feature-Policy").unwrap(),
-            HeaderValue::from_str("identity-credentials-get 'none'").unwrap(),
-        ))
-        .layer(SetResponseHeaderLayer::overriding(
-            HeaderName::from_str("Content-Security-Policy").unwrap(),
-            HeaderValue::from_str("frame-ancestors 'self'; connect-src 'self' https://accounts.google.com/gsi/;").unwrap(),
-        ))
 }

@@ -184,7 +184,8 @@ pub async fn upload_note(
     let mut professor_names: Option<Vec<String>> = None;
     let mut tags: Vec<String> = Vec::new();
     let mut file_data: Option<Bytes> = None;
-    let FILE_SIZE_LIMIT = state.env_vars.file_size_limit;
+    let file_size_limit = state.env_vars.file_size_limit << 20;
+    tracing::info!("Upload request received, file size limit: {} MiB", file_size_limit >> 20);
 
     // Parse multipart form data
     while let Ok(Some(field)) = multipart.next_field().await {
@@ -212,11 +213,10 @@ pub async fn upload_note(
                 .await
                 .map_err(|_| NoteError::UploadFailed("Failed to read file bytes".to_string()))?;
 
-            // Check file size
-            if data.len() > FILE_SIZE_LIMIT {
+            if data.len() > file_size_limit {
                 return Err(NoteError::InvalidData(format!(
                     "File size too big. Only files up to {} MiB are allowed.",
-                    FILE_SIZE_LIMIT >> 20
+                    file_size_limit >> 20
                 )))?;
             }
 
