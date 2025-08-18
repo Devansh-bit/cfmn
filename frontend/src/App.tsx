@@ -1,4 +1,4 @@
-// App.tsx - Fixed to prevent duplicate rendering
+// App.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
@@ -28,12 +28,10 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
-    // Load initial notes
     useEffect(() => {
         loadNotes();
     }, [loadNotes]);
 
-    // Handle search
     const handleSearchChange = async (query: string): Promise<void> => {
         setSearchQuery(query);
         try {
@@ -54,16 +52,13 @@ const AppContent: React.FC = () => {
         }
     };
 
-    // Handle new note upload
     const handleNoteUploaded = (newNote: ResponseNote) => {
-        // Add the new note to the beginning of the list
         setNotes(prevNotes => [newNote, ...prevNotes]);
-        // Clear search query to show all notes including the new one
         setSearchQuery('');
     };
 
     return (
-        <div className="min-h-screen bg-dark-background flex flex-col">
+        <div className="min-h-screen bg-background flex flex-col">
             <AuthProvider onSignIn={loadNotes}>
                 <Header onNoteUploaded={handleNoteUploaded} />
 
@@ -80,8 +75,8 @@ const AppContent: React.FC = () => {
 
                     {loading ? (
                         <div className="flex justify-center items-center py-12">
-                            <div className="w-8 h-8 border-2 border-dark-primary border-t-transparent rounded-full animate-spin"></div>
-                            <span className="ml-3 text-dark-text-secondary">Loading notes...</span>
+                            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <span className="ml-3 text-text-muted">Loading notes...</span>
                         </div>
                     ) : (
                         <CourseGrid notes={notes} />
@@ -95,9 +90,7 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-    return (
-        <AppContent />
-    );
+    return <AppContent />;
 };
 
 export default App;

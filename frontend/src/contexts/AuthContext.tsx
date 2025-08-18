@@ -1,4 +1,3 @@
-// frontend/src/contexts/AuthContext.tsx - Fixed version to prevent logout on refresh
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { AuthUser, AuthContextType } from '../types';
 
@@ -12,9 +11,57 @@ export const useAuth = (): AuthContextType => {
     return context;
 };
 
+// Google Identity Services API Types
+interface GoogleCredentialResponse {
+    credential: string;
+    select_by?: string;
+}
+
+interface GooglePromptNotification {
+    isNotDisplayed(): boolean;
+    getNotDisplayedReason(): string;
+    isSkippedMoment(): boolean;
+    getSkippedReason(): string;
+    isDismissedMoment(): boolean;
+    getDismissedReason(): string;
+}
+
+interface GoogleInitConfig {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+    auto_select?: boolean;
+    cancel_on_tap_outside?: boolean;
+    use_fedcm_for_prompt?: boolean;
+    ux_mode?: 'popup' | 'redirect';
+    context?: 'signin' | 'signup' | 'use';
+    itp_support?: boolean;
+    state_cookie_domain?: string;
+}
+
+interface GoogleButtonConfig {
+    type?: 'standard' | 'icon';
+    theme?: 'outline' | 'filled_blue' | 'filled_black';
+    size?: 'large' | 'medium' | 'small';
+    text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+    shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+    logo_alignment?: 'left' | 'center';
+    width?: string;
+    locale?: string;
+}
+
+interface GoogleRevokeResponse {
+    successful: boolean;
+    error?: string;
+}
+
 interface AuthProviderProps {
     children: ReactNode;
     onSignIn?: () => void;
+    // One Tap configuration options
+    enableOneTap?: boolean;
+    oneTapAutoSelect?: boolean;
+    oneTapCancelOnTapOutside?: boolean;
+    oneTapMomentCallback?: (moment: GooglePromptNotification) => void;
 }
 
 declare global {
@@ -22,11 +69,12 @@ declare global {
         google: {
             accounts: {
                 id: {
-                    initialize: (config: any) => void;
-                    prompt: (callback?: (notification: any) => void) => void;
-                    renderButton: (element: HTMLElement, config: any) => void;
+                    initialize: (config: GoogleInitConfig) => void;
+                    prompt: (callback?: (notification: GooglePromptNotification) => void) => void;
+                    renderButton: (element: HTMLElement, config: GoogleButtonConfig) => void;
                     disableAutoSelect: () => void;
                     cancel: () => void;
+                    revoke: (hint: string, callback: (response: GoogleRevokeResponse) => void) => void;
                 };
             };
         };
@@ -37,14 +85,23 @@ declare global {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({
+                                                              children,
+                                                              onSignIn,
+                                                              enableOneTap = true,
+                                                              oneTapAutoSelect = false,
+                                                              oneTapCancelOnTapOutside = true,
+                                                              oneTapMomentCallback
+                                                          }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [googleInitialized, setGoogleInitialized] = useState(false);
     const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
+    const [oneTapDisplayed, setOneTapDisplayed] = useState(false);
+    const [oneTapDismissed, setOneTapDismissed] = useState(false);
     const isAuthenticated = !!user;
 
-    // Check authentication status on mount - with better error handling
+    // Check authentication status on mount
     useEffect(() => {
         let isMounted = true;
 
@@ -61,17 +118,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
         };
     }, []);
 
-    // Initialize Google OAuth - only once per session
+    // Initialize Google OAuth and One Tap
     useEffect(() => {
         let isMounted = true;
         let scriptCleanup: (() => void) | null = null;
-
-        // Check if Google script is already loaded to avoid reloading
-        if (window.google && window.googleAuthReady) {
-            setGoogleScriptLoaded(true);
-            setGoogleInitialized(true);
-            return;
-        }
 
         const initializeGoogleAuth = () => {
             if (window.google && GOOGLE_CLIENT_ID && !googleInitialized && isMounted) {
@@ -81,17 +131,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
                     window.google.accounts.id.initialize({
                         client_id: GOOGLE_CLIENT_ID,
                         callback: handleCredentialResponse,
-                        auto_select: false,
-                        cancel_on_tap_outside: true,
+                        auto_select: oneTapAutoSelect,
+                        cancel_on_tap_outside: oneTapCancelOnTapOutside,
                         use_fedcm_for_prompt: false,
                         ux_mode: 'popup',
                         context: 'signin',
+                        // One Tap specific configurations
+                        itp_support: true,
+                        state_cookie_domain: window.location.hostname,
                     });
-
-                    // Only disable auto-select if user is not already authenticated
-                    if (!user) {
-                        window.google.accounts.id.disableAutoSelect();
-                    }
 
                     if (isMounted) {
                         setGoogleInitialized(true);
@@ -100,10 +148,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
                         window.dispatchEvent(new CustomEvent('googleAuthReady'));
                     }
                 } catch (error) {
-                    console.error('Failed to initialize Google Auth:', error);
+                    console.error('Failed to initialize Google Auth:', error instanceof Error ? error.message : String(error));
                 }
             }
         };
+
+        // Check if Google script is already loaded
+        if (window.google && window.googleAuthReady) {
+            setGoogleScriptLoaded(true);
+            if (!googleInitialized) {
+                initializeGoogleAuth();
+            }
+            return;
+        }
 
         const loadGoogleScript = () => {
             if (!isMounted) return null;
@@ -137,7 +194,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
             };
 
             script.onerror = (error) => {
-                console.error('Failed to load Google Identity Services:', error);
+                console.error('Failed to load Google Identity Services:', error instanceof Error ? error.message : String(error));
                 if (isMounted) {
                     setGoogleScriptLoaded(false);
                 }
@@ -146,7 +203,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
             document.head.appendChild(script);
 
             return () => {
-                // Only cleanup if we're actually unmounting, not on refresh
                 if (document.readyState === 'complete' && !isMounted) {
                     try {
                         const scriptToRemove = document.querySelector('script[src*="gsi/client"]');
@@ -155,7 +211,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
                         }
                         window.googleAuthReady = false;
                     } catch (error) {
-                        console.warn('Failed to cleanup Google script:', error);
+                        console.warn('Failed to cleanup Google script:', error instanceof Error ? error.message : String(error));
                     }
                 }
             };
@@ -169,9 +225,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
                 scriptCleanup();
             }
         };
-    }, [googleInitialized, user]);
+    }, [googleInitialized, oneTapAutoSelect, oneTapCancelOnTapOutside]);
 
-    const handleCredentialResponse = async (response: any) => {
+    // Trigger One Tap when conditions are met
+    useEffect(() => {
+        if (
+            enableOneTap &&
+            googleInitialized &&
+            !isAuthenticated &&
+            !isLoading &&
+            !oneTapDisplayed &&
+            !oneTapDismissed
+        ) {
+            showOneTap();
+        }
+    }, [enableOneTap, googleInitialized, isAuthenticated, isLoading, oneTapDisplayed, oneTapDismissed]);
+
+    const handleCredentialResponse = async (response: GoogleCredentialResponse) => {
         if (!response.credential) {
             console.error('No credential received from Google');
             return;
@@ -192,11 +262,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
             });
 
             if (result.ok) {
-                const data = await result.json();
+                const data = await result.json() as { token: string; user: AuthUser };
 
                 if (data.token && data.user) {
                     localStorage.setItem('auth_token', data.token);
                     setUser(data.user);
+                    setOneTapDisplayed(false); // Reset for future sessions
+                    setOneTapDismissed(false);
+
                     if (onSignIn) {
                         onSignIn();
                     }
@@ -210,11 +283,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
                 throw new Error(`Authentication failed: ${result.status}`);
             }
         } catch (error) {
-            console.error('Authentication error:', error);
-            // Don't immediately clear user state - let checkAuthStatus handle it
+            console.error('Authentication error:', error instanceof Error ? error.message : String(error));
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const showOneTap = () => {
+        if (!window.google || !googleInitialized) {
+            console.warn('Google Auth not initialized, cannot show One Tap');
+            return;
+        }
+
+        console.log('Displaying Google One Tap prompt');
+        setOneTapDisplayed(true);
+
+        window.google.accounts.id.prompt((notification: GooglePromptNotification) => {
+            console.log('One Tap notification:', notification);
+
+            // Handle different notification moments
+            if (notification.isNotDisplayed()) {
+                console.log('One Tap not displayed:', notification.getNotDisplayedReason());
+                setOneTapDisplayed(false);
+
+                // Handle specific reasons why One Tap wasn't displayed
+                const reason = notification.getNotDisplayedReason();
+                if (reason === 'suppressed_by_user' || reason === 'unregistered_origin') {
+                    setOneTapDismissed(true);
+                }
+            } else if (notification.isSkippedMoment()) {
+                console.log('One Tap skipped:', notification.getSkippedReason());
+                setOneTapDisplayed(false);
+            } else if (notification.isDismissedMoment()) {
+                console.log('One Tap dismissed:', notification.getDismissedReason());
+                setOneTapDisplayed(false);
+                setOneTapDismissed(true);
+
+                // Store dismissal in session storage to prevent showing again in this session
+                sessionStorage.setItem('oneTapDismissed', 'true');
+            }
+
+            // Call user-provided callback if available
+            if (oneTapMomentCallback) {
+                oneTapMomentCallback(notification);
+            }
+        });
     };
 
     const checkAuthStatus = async () => {
@@ -223,19 +336,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
             if (!token) {
                 setUser(null);
                 setIsLoading(false);
+
+                // Check if One Tap was dismissed in this session
+                const dismissed = sessionStorage.getItem('oneTapDismissed');
+                if (dismissed === 'true') {
+                    setOneTapDismissed(true);
+                }
                 return;
             }
 
             console.log('Checking authentication status...', API_BASE_URL);
 
-            // Validate API_BASE_URL
             if (!API_BASE_URL) {
                 console.error('API_BASE_URL is not defined');
                 setIsLoading(false);
                 return;
             }
 
-            // Add timeout to prevent hanging requests
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -250,34 +367,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
             clearTimeout(timeoutId);
 
             if (response.ok) {
-                const userData = await response.json();
+                const userData = await response.json() as AuthUser;
                 setUser(userData);
                 console.log('User authenticated:', userData);
+                // Clear One Tap states if user is already authenticated
+                setOneTapDisplayed(false);
+                setOneTapDismissed(false);
             } else if (response.status === 401 || response.status === 403) {
-                // Only clear auth on actual authentication failures
                 console.log('Token invalid or expired, clearing auth state');
                 localStorage.removeItem('auth_token');
                 setUser(null);
             } else if (response.status === 404) {
-                // 404 likely means backend is down or endpoint doesn't exist
                 console.error('Auth endpoint not found (404). Check if backend is running and endpoint exists.');
-                // Keep token for now, but clear user state
                 setUser(null);
             } else {
-                // For other server errors, keep existing state but log error
                 console.warn('Auth check failed with status:', response.status);
-                // Don't clear user state on server errors
             }
         } catch (error) {
-            console.error('Auth check failed:', error);
+            console.error('Auth check failed:', error instanceof Error ? error.message : String(error));
 
-            // Only clear auth state if it's a definitive authentication error
             if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
                 console.warn('Network error during auth check - keeping existing state');
-            } else if (error.name === 'AbortError') {
+            } else if (error instanceof Error && error.name === 'AbortError') {
                 console.warn('Auth check timed out - keeping existing state');
             } else {
-                // Clear state only for non-network errors
                 localStorage.removeItem('auth_token');
                 setUser(null);
             }
@@ -294,7 +407,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
     const signOut = (): void => {
         try {
             localStorage.removeItem('auth_token');
+            sessionStorage.removeItem('oneTapDismissed');
             setUser(null);
+            setOneTapDisplayed(false);
+            setOneTapDismissed(false);
 
             if (window.google && googleInitialized) {
                 window.google.accounts.id.disableAutoSelect();
@@ -303,9 +419,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
             console.log('Signed out successfully');
             window.location.reload();
         } catch (error) {
-            console.error('Sign out error:', error);
+            console.error('Sign out error:', error instanceof Error ? error.message : String(error));
             localStorage.removeItem('auth_token');
+            sessionStorage.removeItem('oneTapDismissed');
             setUser(null);
+        }
+    };
+
+    // Method to manually trigger One Tap (useful for retry scenarios)
+    const triggerOneTap = (): void => {
+        if (!isAuthenticated) {
+            setOneTapDismissed(false);
+            setOneTapDisplayed(false);
+            sessionStorage.removeItem('oneTapDismissed');
+            showOneTap();
+        }
+    };
+
+    // Method to cancel One Tap
+    const cancelOneTap = (): void => {
+        if (window.google && googleInitialized) {
+            window.google.accounts.id.cancel();
+            setOneTapDisplayed(false);
+            setOneTapDismissed(true);
         }
     };
 
@@ -317,6 +453,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, onSignIn }
         signOut,
         googleInitialized,
         googleScriptLoaded,
+        // One Tap specific methods and states
+        triggerOneTap,
+        cancelOneTap,
+        oneTapDisplayed,
+        oneTapDismissed,
     };
 
     return (

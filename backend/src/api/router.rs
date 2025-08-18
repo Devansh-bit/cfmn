@@ -55,11 +55,13 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .merge(protected_router)
         .merge(optional_user_router);
 
-    let static_files_path = state.env_vars.paths.get_notes_dir().to_path_buf();
+    let notes_path = state.env_vars.paths.get_notes_dir().to_path_buf();
+    let images_path = state.env_vars.paths.get_previews_dir().to_path_buf();
 
     Router::new()
         .nest("/api", api_router)
-        .nest_service("/notes/uploaded", ServeDir::new(static_files_path))
+        .nest_service("/notes/uploaded", ServeDir::new(notes_path))
+        .nest_service("/previews/uploaded", ServeDir::new(images_path))
         .route("/", get(handlers::misc::serve_react_app))
         .with_state(state)
         // Add security headers using tower-http to remove google onetap

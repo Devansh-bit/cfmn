@@ -25,7 +25,8 @@ pub struct AuthRequest {
 struct GoogleClaims {
     email: String,
     name: String,
-    sub: String, // This is the Google ID
+    sub: String,
+    picture: String,
 }
 
 // Structs to represent the JSON Web Key Set (JWKS) from Google
@@ -114,6 +115,7 @@ pub async fn google_auth_callback(
         google_id: claims.sub,
         email: claims.email,
         full_name: claims.name,
+        picture: claims.picture,
     };
 
     let user = find_or_create_user(&state.db_wrapper, user_info.clone())
@@ -146,7 +148,7 @@ pub async fn google_auth_callback(
             crate::api::errors::AuthError::ConfigError("Failed to create JWT token".to_string())
         })?;
 
-    // Return both user and token instead of setting cookie
+    // Return User and Token
     Ok(Json(json!({
         "user": user,
         "token": token
@@ -159,5 +161,4 @@ pub async fn get_current_user(
 ) -> Result<Response, AppError> {
     Ok(Json(user).into_response())
 }
-
 

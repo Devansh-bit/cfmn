@@ -34,7 +34,8 @@ pub struct ResponseNote {
     pub professor_names: Option<Vec<String>>,
     pub tags: Vec<String>,
     pub is_public: bool,
-    pub preview_image_url: Option<String>,
+    pub has_preview_image: bool,
+    pub preview_image_url: String,
     pub file_url: String,
     pub uploader_user: ResponseUser,
     pub created_at: DateTime<Utc>,
@@ -48,6 +49,7 @@ impl ResponseNote {
     pub fn from_note_with_user(
         note: NoteWithUser,
         file_url: String,
+        preview_image_url: String,
     ) -> Self {
         Self {
             id: note.note_id,
@@ -57,7 +59,8 @@ impl ResponseNote {
             professor_names: note.note_professor_names,
             tags: note.note_tags,
             is_public: note.note_is_public,
-            preview_image_url: None, // TODO
+            has_preview_image: note.note_has_preview_image,
+            preview_image_url,
             file_url,
             upvotes: note.note_upvote_count as usize,
             downvotes: note.note_downvote_count as usize,

@@ -7,6 +7,7 @@ pub struct GoogleUserInfo {
     pub google_id: String,
     pub email: String,
     pub full_name: String,
+    pub picture: String,
 }
 
 pub async fn find_user_by_google_id(
@@ -34,10 +35,11 @@ pub async fn find_or_create_user(
     }
     let new_user = sqlx::query_as!(
         User,
-        "INSERT INTO users (google_id, email, full_name) VALUES ($1, $2, $3) RETURNING *",
+        "INSERT INTO users (google_id, email, full_name, picture) VALUES ($1, $2, $3, $4) RETURNING *",
         user_info.google_id,
         user_info.email,
-        user_info.full_name
+        user_info.full_name,
+        user_info.picture,
     )
         .fetch_one(db_wrapper.pool())
         .await?;

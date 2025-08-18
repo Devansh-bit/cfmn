@@ -60,7 +60,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileChange(e.dataTransfer.files[0]);
     }
@@ -84,7 +83,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setIsUploading(true);
@@ -94,34 +92,15 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
       const uploadFormData = new FormData();
       uploadFormData.append('course_name', formData.courseName.trim());
       uploadFormData.append('course_code', formData.courseCode.trim());
-
-      if (formData.description.trim()) {
-        uploadFormData.append('description', formData.description.trim());
-      }
-
-      if (formData.professorNames.trim()) {
-        uploadFormData.append('professor_names', formData.professorNames.trim());
-      }
-
-      if (formData.tags.trim()) {
-        uploadFormData.append('tags', formData.tags.trim());
-      }
-
+      if (formData.description.trim()) uploadFormData.append('description', formData.description.trim());
+      if (formData.professorNames.trim()) uploadFormData.append('professor_names', formData.professorNames.trim());
+      if (formData.tags.trim()) uploadFormData.append('tags', formData.tags.trim());
       uploadFormData.append('file', formData.file!);
 
       const newNote = await notesApi.uploadNote(uploadFormData);
       onSuccess(newNote);
       onClose();
-
-      // Reset form
-      setFormData({
-        courseName: '',
-        courseCode: '',
-        description: '',
-        professorNames: '',
-        tags: '',
-        file: null,
-      });
+      setFormData({ courseName: '', courseCode: '', description: '', professorNames: '', tags: '', file: null });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
@@ -130,14 +109,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
   };
 
   const resetAndClose = () => {
-    setFormData({
-      courseName: '',
-      courseCode: '',
-      description: '',
-      professorNames: '',
-      tags: '',
-      file: null,
-    });
+    setFormData({ courseName: '', courseCode: '', description: '', professorNames: '', tags: '', file: null });
     setError(null);
     onClose();
   };
@@ -146,21 +118,15 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
 
   return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-        <div className="bg-dark-surface rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-700">
-            <h2 className="text-2xl font-bold text-dark-text">Upload Notes</h2>
-            <button
-                onClick={resetAndClose}
-                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-            >
+        <div className="bg-surface rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center p-6 border-b border-border">
+            <h2 className="text-2xl font-bold text-text-base">Upload Notes</h2>
+            <button onClick={resetAndClose} className="p-2 text-text-muted hover:text-text-base hover:bg-gray-700 rounded-lg transition-colors">
               <X size={20} />
             </button>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Error Display */}
             {error && (
                 <div className="flex items-center space-x-2 p-4 bg-red-900 border border-red-700 rounded-lg text-red-300">
                   <AlertCircle size={20} />
@@ -168,119 +134,85 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
                 </div>
             )}
 
-            {/* Course Name */}
             <div>
-              <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Course Name *
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-2">Course Name *</label>
               <input
                   type="text"
                   value={formData.courseName}
                   onChange={(e) => handleInputChange('courseName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="e.g., Data Structures and Algorithms"
                   required
               />
             </div>
 
-            {/* Course Code */}
             <div>
-              <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Course Code *
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-2">Course Code *</label>
               <input
                   type="text"
                   value={formData.courseCode}
                   onChange={(e) => handleInputChange('courseCode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="e.g., CS101"
                   required
               />
             </div>
 
-            {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Description
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-2">Description</label>
               <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Brief description of the notes content..."
               />
             </div>
 
-            {/* Professor Names */}
             <div>
-              <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Professor Names
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-2">Professor Names</label>
               <input
                   type="text"
                   value={formData.professorNames}
                   onChange={(e) => handleInputChange('professorNames', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="e.g., Dr. Smith, Prof. Johnson (comma-separated)"
               />
             </div>
 
-            {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Tags
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-2">Tags</label>
               <input
                   type="text"
                   value={formData.tags}
                   onChange={(e) => handleInputChange('tags', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-700 bg-dark-surface rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="e.g., algorithms, sorting, trees (comma-separated)"
               />
             </div>
 
-            {/* File Upload */}
             <div>
-              <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                PDF File *
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-2">PDF File *</label>
               <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      dragActive
-                          ? 'border-teal-400 bg-gray-800'
-                          : 'border-gray-700 hover:border-teal-400'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragActive ? 'border-primary bg-gray-800' : 'border-border hover:border-primary'}`}
+                  onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
               >
                 {formData.file ? (
                     <div className="flex items-center justify-center space-x-2 text-green-400">
                       <FileText size={20} />
                       <span className="font-medium">{formData.file.name}</span>
-                      <button
-                          type="button"
-                          onClick={() => handleFileChange(null)}
-                          className="text-red-400 hover:text-red-300"
-                      >
+                      <button type="button" onClick={() => handleFileChange(null)} className="text-red-400 hover:text-red-300">
                         <X size={16} />
                       </button>
                     </div>
                 ) : (
                     <>
                       <Upload size={40} className="mx-auto text-gray-500 mb-2" />
-                      <p className="text-dark-text-secondary mb-2">
+                      <p className="text-text-muted mb-2">
                         Drag and drop your PDF file here, or{' '}
-                        <label className="text-teal-400 cursor-pointer hover:underline">
+                        <label className="text-primary cursor-pointer hover:underline">
                           browse
-                          <input
-                              type="file"
-                              accept=".pdf"
-                              onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                              className="hidden"
-                          />
+                          <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} className="hidden" />
                         </label>
                       </p>
                       <p className="text-sm text-gray-500">Only PDF files are supported</p>
@@ -289,19 +221,14 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuccess })
               </div>
             </div>
 
-            {/* Submit Button */}
             <div className="flex justify-end space-x-4 pt-4">
-              <button
-                  type="button"
-                  onClick={resetAndClose}
-                  className="px-6 py-2 text-dark-text-secondary hover:text-white font-medium"
-              >
+              <button type="button" onClick={resetAndClose} className="px-6 py-2 text-text-muted hover:text-text-base font-medium">
                 Cancel
               </button>
               <button
                   type="submit"
                   disabled={isUploading}
-                  className="flex items-center space-x-2 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  className="flex items-center space-x-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 {isUploading ? (
                     <>

@@ -1,7 +1,3 @@
-// frontend/src/types.ts
-
-import type {ReactNode} from 'react';
-
 export interface ResponseUser {
     id: string;
     google_id: string;
@@ -9,9 +5,10 @@ export interface ResponseUser {
     full_name: string;
     reputation: number;
     created_at: string;
+    picture: string;
 }
 
-export type VoteType = 'upvote' | 'downvote' | 'remove';
+export type VoteType = 'upvote' | 'remove'; // 'downvote' removed for optimism
 export interface DBVote {
     id: string;
     user_id: string;
@@ -34,7 +31,7 @@ export interface ResponseNote {
     created_at: string;
     upvotes: number;
     downvotes: number;
-    user_vote: boolean | null; // Optional, can be null if user hasn't voted or isnt authenticated
+    user_vote: boolean | null;
     downloads: number;
 }
 
@@ -45,23 +42,13 @@ export interface SearchBarProps {
 }
 
 export interface CourseCardProps {
-    note: ResponseNote; // Changed from course to note
+    note: ResponseNote;
 }
 
 export interface CourseGridProps {
-    notes: ResponseNote[]; // Changed from courses to notes
-}
-
-export interface FooterProps {
-    children?: ReactNode;
-}
-
-// API response types
-export interface NotesResponse {
     notes: ResponseNote[];
-    total: number;
 }
-
+// API response types
 export interface AuthUser {
     id: string;
     google_id: string;
@@ -69,17 +56,20 @@ export interface AuthUser {
     full_name: string;
     reputation: number;
     created_at: string;
+    picture: string;
 }
 
-// types.ts - Update the AuthContextType interface
 export interface AuthContextType {
     user: AuthUser | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     signIn: () => Promise<void>;
     signOut: () => void;
-    promptSignIn?: () => void; // Add this optional method
-    googleInitialized: boolean; // Add this
-    googleScriptLoaded: boolean; // Add this
-    onSignIn?: () => void;
+    googleInitialized: boolean;
+    googleScriptLoaded: boolean;
+
+    triggerOneTap?: () => void;
+    cancelOneTap?: () => void;
+    oneTapDisplayed?: boolean;
+    oneTapDismissed?: boolean;
 }

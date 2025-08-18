@@ -32,6 +32,11 @@
         "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "picture",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -45,7 +50,8 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
   "hash": "7b0389d38dfc559a58fe2e9a6daba8c0fd6a7549c95fddf79fa63107afda088b"

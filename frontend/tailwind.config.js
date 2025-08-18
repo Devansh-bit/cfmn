@@ -7,14 +7,16 @@ export default {
     theme: {
         extend: {
             colors: {
-                dark: {
-                    background: '#121212',
-                    surface: '#1E1E1E',
-                    primary: '#2dd4bf', // Changed from purple to teal
-                    secondary: '#03DAC6',
-                    text: '#E0E0E0',
-                    'text-secondary': '#A0A0A0',
+                background: 'var(--color-background)',
+                surface: 'var(--color-surface)',
+                primary: {
+                    DEFAULT: 'var(--color-primary)',
+                    hover: 'var(--color-primary-hover)',
                 },
+                secondary: 'var(--color-secondary)',
+                'text-base': 'var(--color-text-base)',
+                'text-muted': 'var(--color-text-muted)',
+                border: 'var(--color-border)',
             },
         },
     },

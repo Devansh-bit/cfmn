@@ -20,6 +20,7 @@ pub struct User {
     pub full_name: String,
     pub reputation: i32,
     pub created_at: DateTime<Utc>,
+    pub picture: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]

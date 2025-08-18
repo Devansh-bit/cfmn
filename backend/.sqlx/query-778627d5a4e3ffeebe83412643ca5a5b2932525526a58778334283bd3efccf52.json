@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO users (google_id, email, full_name) VALUES ($1, $2, $3) RETURNING *",
+  "query": "INSERT INTO users (google_id, email, full_name, picture) VALUES ($1, $2, $3, $4) RETURNING *",
   "describe": {
     "columns": [
       {
@@ -32,13 +32,19 @@
         "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "picture",
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
         "Varchar",
         "Varchar",
-        "Varchar"
+        "Varchar",
+        "Text"
       ]
     },
     "nullable": [
@@ -47,8 +53,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "93a08fa3505e5f48441fee5a08498db1ab18c37cf57b7f24ac3ea7ffbfa80521"
+  "hash": "778627d5a4e3ffeebe83412643ca5a5b2932525526a58778334283bd3efccf52"
 }
