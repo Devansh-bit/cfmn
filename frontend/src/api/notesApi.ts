@@ -118,10 +118,7 @@ class NotesAPI {
         if (!response.ok) {
             throw new Error(`Failed to delete note: ${response.status}`);
         }
-        // No need to return JSON for delete operations
     }
-
-    // Helper function to download a note (unchanged)
     async downloadNote(note: ResponseNote): Promise<void> {
         const url = `/api/notes/${note.id}/download`;
         await this.fetchWithErrorHandling(url);
