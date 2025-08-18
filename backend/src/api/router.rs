@@ -1,7 +1,7 @@
 // backend/src/api/router.rs
 
 use super::handlers;
-use crate::api::auth;
+use crate::api::middleware;
 use crate::db::DBPoolWrapper;
 use crate::env::EnvVars;
 use axum::middleware::from_fn_with_state;
@@ -32,7 +32,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/auth/me", get(handlers::auth::get_current_user))
         .route_layer(from_fn_with_state(
             state.clone(),
-            auth::verify_token_middleware,
+            middleware::verify_token_middleware,
         ));
 
     let optional_user_router = Router::new()
@@ -41,7 +41,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/notes/{note_id}", get(handlers::notes::note_by_id))
         .route_layer(from_fn_with_state(
             state.clone(),
-            auth::optional_auth_middleware,
+            middleware::optional_auth_middleware,
         ));
 
     let public_router = Router::new()

@@ -1,4 +1,4 @@
-use crate::api::auth::AppClaims;
+use crate::api::middleware::AppClaims;
 use crate::api::errors::AppError;
 use crate::api::router::RouterState;
 use crate::db::handlers::users::{find_or_create_user, GoogleUserInfo};
