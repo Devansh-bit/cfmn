@@ -1,20 +1,46 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: notes_db_container
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: notes_db
+  cfmn-backend:
+    build: .
+    container_name: cfmn-backend
     ports:
-      - "5432:5432"
+      - "8082:8082"
+    environment:
+      - DB_HOST=cfmn-database
     volumes:
-      # This volume persists the database data
-      - postgres-data:/var/lib/postgresql/data
-      # This script will run on initialization from the /database directory
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: always
+      - ./static:/app/static
+      - ./logs:/app/logs
+      - nginx-config-volume:/nginx-config
+    networks:
+      - metaploy-network
+      - metaploy-private-network
+    depends_on:
+      - cfmn-database
+    restart: unless-stopped
+    entrypoint: ["/app/scripts/postinstall.sh"]
+
+  cfmn-database:
+    image: postgres:15
+    container_name: cfmn-database
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - cfmn-postgres-data:/var/lib/postgresql/data
+    networks:
+      - metaploy-private-network
+    restart: unless-stopped
 
 volumes:
-  postgres-data:
-    driver: local
+  cfmn-postgres-data:
+  nginx-config-volume:
+    external: true
+    name: metaploy_nginx-config-volume
+
+networks:
+  metaploy-network:
+    external: true
+    name: metaploy_metaploy-network
+  metaploy-private-network:
+    external: true
+    name: metaploy_metaploy-private-network

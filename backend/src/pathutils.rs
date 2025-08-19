@@ -18,15 +18,13 @@ pub struct Paths {
     /// The absolute system path to the notes directory on the server
     notes_system_path: PathBuf,
     /// The slug to the notes directory
-    ///
-    /// A slug is a relative path independent of the URL or system path. This slug is stored in the database
-    /// and either the [`static_files_url`] or the [`static_files_path`] is prepended to it to get its URL
-    /// (to send to the frontend) or the system path (for backend operations)
     notes_path_slug: PathBuf,
     /// The absolute system path to the previews directory on the server
     previews_system_path: PathBuf,
     /// The slug to the previews directory
     previews_path_slug: PathBuf,
+
+    log_location: PathBuf,
 }
 
 impl Default for Paths {
@@ -35,6 +33,7 @@ impl Default for Paths {
         let static_file_storage_location = PathBuf::from("./static_files");
         let notes_path_slug = PathBuf::from("notes/uploaded");
         let previews_path_slug = PathBuf::from("notes/previews");
+        let log_location = PathBuf::from("./logs");
 
         Self {
             static_files_url: Url::parse("http://localhost:3000")
@@ -44,6 +43,7 @@ impl Default for Paths {
             notes_path_slug,
             previews_system_path: static_file_storage_location.join(&previews_path_slug),
             previews_path_slug,
+            log_location,
         }
     }
 }
@@ -79,6 +79,9 @@ impl Paths {
             fs::create_dir_all(&previews_system_path)?;
         }
 
+        // --- Log Location ---
+        let log_location = static_files_abs_path.join("logs");
+
         Ok(Self {
             static_files_url: Url::parse(static_files_url)?,
             static_files_path: static_files_abs_path,
@@ -86,6 +89,7 @@ impl Paths {
             notes_path_slug,
             previews_system_path,
             previews_path_slug,
+            log_location,
         })
     }
 

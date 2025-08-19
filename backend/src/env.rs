@@ -18,19 +18,27 @@ pub struct EnvVars {
     #[arg(env)]
     pub file_size_limit: usize,
 
+    #[arg(env)]
+    pub port: u16,
+
     // Paths
-    #[arg(env, default_value = "http://localhost:3000")]
+    #[arg(env)]
     /// The URL of the static files server (odin's vault)
     static_files_url: String,
-    #[arg(env, default_value = "/home/exempl4r/coding/static")]
+    #[arg(env)]
     /// The path where static files are served from
     static_file_storage_location: PathBuf,
-    #[arg(env, default_value = "notes/uploaded")]
+    #[arg(env)]
     /// The path where uploaded notes are stored temporarily, relative to the `static_file_storage_location`
     uploaded_notes_path: PathBuf,
-    #[arg(env, default_value = "previews/uploaded")]
+    #[arg(env)]
     /// The path where uploaded notes are stored temporarily, relative to the `static_file_storage_location`
     previews_path: PathBuf,
+
+
+    #[arg(env, default_value = "./log/application.log")]
+    /// Location where logs are stored
+    pub log_location: PathBuf,
 
     #[arg(skip)]
     /// All paths must be handled using this
@@ -46,6 +54,8 @@ impl EnvVars {
             &self.uploaded_notes_path,
             &self.previews_path,
         )?;
+
+        self.log_location = std::path::absolute(self.log_location)?;
 
         Ok(self)
     }
