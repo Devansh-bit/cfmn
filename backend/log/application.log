@@ -1,0 +1,10 @@
+2025-08-19T12:53:54.125528Z DEBUG sqlx::query: summary="SELECT current_database()" db.statement="" rows_affected=1 rows_returned=1 elapsed=2.166861ms elapsed_secs=0.002166861
+2025-08-19T12:53:54.127875Z DEBUG sqlx::query: summary="SELECT pg_advisory_lock($1)" db.statement="" rows_affected=1 rows_returned=1 elapsed=2.087789ms elapsed_secs=0.002087789
+2025-08-19T12:53:54.129190Z  INFO sqlx::postgres::notice: relation "_sqlx_migrations" already exists, skipping
+2025-08-19T12:53:54.129317Z DEBUG sqlx::query: summary="CREATE TABLE IF NOT …" db.statement="\n\n\nCREATE TABLE IF NOT EXISTS _sqlx_migrations (\n    version BIGINT PRIMARY KEY,\n    description TEXT NOT NULL,\n    installed_on TIMESTAMPTZ NOT NULL DEFAULT now(),\n    success BOOLEAN NOT NULL,\n    checksum BYTEA NOT NULL,\n    execution_time BIGINT NOT NULL\n);\n                \n" rows_affected=0 rows_returned=0 elapsed=1.290682ms elapsed_secs=0.001290682
+2025-08-19T12:53:54.134721Z DEBUG sqlx::query: summary="SELECT version FROM _sqlx_migrations …" db.statement="\n\nSELECT version FROM _sqlx_migrations WHERE success = false ORDER BY version LIMIT 1\n" rows_affected=0 rows_returned=0 elapsed=5.261015ms elapsed_secs=0.005261015
+2025-08-19T12:53:54.136486Z DEBUG sqlx::query: summary="SELECT version, checksum FROM …" db.statement="\n\nSELECT version, checksum FROM _sqlx_migrations ORDER BY version\n" rows_affected=0 rows_returned=0 elapsed=1.555604ms elapsed_secs=0.001555604
+2025-08-19T12:53:54.137149Z DEBUG sqlx::query: summary="SELECT current_database()" db.statement="" rows_affected=1 rows_returned=1 elapsed=465.099µs elapsed_secs=0.000465099
+2025-08-19T12:53:54.138651Z DEBUG sqlx::query: summary="SELECT pg_advisory_unlock($1)" db.statement="" rows_affected=1 rows_returned=1 elapsed=1.320571ms elapsed_secs=0.001320571
+2025-08-19T12:53:54.138845Z  INFO backend: Database connection established.
+2025-08-19T12:53:54.141153Z  INFO backend: Server listening on 0.0.0.0:3000

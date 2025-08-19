@@ -14,7 +14,7 @@ impl DBPoolWrapper {
             .connect(&db_url)
             .await
             .expect("Error connecting to database");
-        sqlx::migrate!("../migrations")
+        sqlx::migrate!("./migrations")
             .run(&connection_pool)
             .await
             .expect("Error running migrations");
