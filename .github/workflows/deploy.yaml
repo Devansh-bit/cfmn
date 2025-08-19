@@ -40,7 +40,7 @@ jobs:
             - name: Build & Push cfmn Backend
               uses: docker/build-push-action@v5
               with:
-                  context: ./backend/
+                  context: .
                   push: true
                   tags: ${{ secrets.DOCKERHUB_USERNAME }}/cfmn-backend:latest
                   cache-from: type=local,src=/tmp/.buildx-cache-cfmn-backend
