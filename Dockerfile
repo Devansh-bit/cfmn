@@ -1,20 +1,29 @@
+FROM node:24-alpine3.21 AS frontend-builder
+
+WORKDIR /app/frontend
+
+COPY frontend ./
+RUN npm install
+RUN npm run build
+
+
 FROM rust:slim-bullseye AS builder
 
 # Set the working directory
-WORKDIR /src
+WORKDIR /app
 
 # Install dependencies
 RUN apt-get update
 RUN apt-get install -y build-essential musl-dev musl-tools pkgconf
 
 # Copy dependency files
-COPY Cargo.toml Cargo.lock ./
+COPY backend/Cargo.toml backend/Cargo.lock ./
 
 # Copy source code
-COPY src/ ./src
-COPY metaploy/ ./metaploy
-COPY .sqlx/ ./.sqlx
-COPY migrations/ ./migrations
+COPY backend/src ./src
+COPY backend/metaploy ./metaploy
+COPY backend/.sqlx ./.sqlx
+COPY backend/migrations ./migrations
 
 # For static build
 RUN rustup target add x86_64-unknown-linux-musl
@@ -35,11 +44,14 @@ ENV TZ="Asia/Kolkata"
 WORKDIR /app
 
 # Copy metaploy files
-COPY metaploy/ ./
+COPY backend/metaploy ./
 
 # Make postinstall script executable
 RUN chmod +x ./postinstall.sh
 
-COPY --from=builder /src/target/x86_64-unknown-linux-musl/release/backend .
+# Copy frontend build from the previous stage
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/backend .
+ENV FRONTEND_BUILD_DIR=/app/frontend/dist
 
 CMD ["./postinstall.sh", "./backend"]
