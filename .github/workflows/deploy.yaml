@@ -43,6 +43,8 @@ jobs:
                   context: .
                   push: true
                   tags: ${{ secrets.DOCKERHUB_USERNAME }}/cfmn-backend:latest
+                  build-args: |
+                      VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
                   cache-from: type=local,src=/tmp/.buildx-cache-cfmn-backend
                   cache-to: type=local,dest=/tmp/.buildx-cache-cfmn-backend-new,mode=max
 

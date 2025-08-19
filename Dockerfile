@@ -2,6 +2,8 @@ FROM node:24-alpine3.21 AS frontend-builder
 
 WORKDIR /app/frontend
 
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 COPY frontend ./
 RUN npm install
 RUN npm run build
