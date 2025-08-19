@@ -4,7 +4,7 @@ WORKDIR /src
 
 # Install dependencies
 RUN apt-get update
-RUN apt-get install -y build-essential musl-dev musl-tools poppler-utils openssl-dev pkgconf
+RUN apt-get install -y build-essential musl-dev musl-tools poppler-utils libssl-dev pkgconf
 
 # Copy all files
 COPY src/ ./src
