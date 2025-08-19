@@ -6,15 +6,13 @@ use crate::db::DBPoolWrapper;
 use crate::env::EnvVars;
 use axum::middleware::from_fn_with_state;
 use axum::{
-    http::{HeaderName, HeaderValue, StatusCode},
+    http::{  StatusCode},
     routing::{get, post, options},
     Router,
     response::Response,
     body::Body,
 };
-use tower_http::services::ServeDir;
-use tower_http::set_header::SetResponseHeaderLayer;
-use std::str::FromStr;
+use tower_http::services::{ServeDir, ServeFile};
 
 #[derive(Clone)]
 pub(crate) struct RouterState {
@@ -40,7 +38,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         env_vars,
     };
 
-    // Handle OPTIONS requests FIRST, without any middleware
+    // Handle OPTIONS requests first, without any middleware
     let options_router = Router::new()
         .route("/notes/upload", options(handle_options))
         .route("/notes/{note_id}/vote", options(handle_options))
@@ -51,7 +49,7 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
         .route("/auth/google", options(handle_options))
         .route("/notes/{note_id}/download", options(handle_options));
 
-    // Protected routes WITHOUT options handlers
+    // Protected routes without options handlers
     let protected_router = Router::new()
         .route("/notes/upload", post(handlers::notes::upload_note))
         .route("/notes/{note_id}/vote", post(handlers::votes::add_vote))
@@ -85,11 +83,14 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
     // ... rest of your code remains the same
     let notes_path = state.env_vars.paths.get_notes_dir().to_path_buf();
     let images_path = state.env_vars.paths.get_previews_dir().to_path_buf();
-
+    println!("{}", state.env_vars.paths.frontend_build_dir.join("index.html").to_str().unwrap());
     Router::new()
         .nest("/api", api_router)
         .nest_service("/notes/uploaded", ServeDir::new(notes_path))
         .nest_service("/previews/uploaded", ServeDir::new(images_path))
-        .route("/", get(handlers::misc::serve_react_app))
+        .fallback_service(
+            ServeDir::new(&state.env_vars.paths.frontend_build_dir)
+                .not_found_service(ServeFile::new(&state.env_vars.paths.frontend_build_dir.join("index.html"))),
+        )
         .with_state(state)
 }

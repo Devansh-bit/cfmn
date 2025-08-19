@@ -3,11 +3,8 @@ use crate::api::errors::AppError;
 use crate::api::router::RouterState;
 use crate::db::handlers::users::{find_or_create_user, GoogleUserInfo};
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
-use axum_extra::extract::cookie::Cookie;
-use axum_extra::extract::cookie::CookieJar;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, decode_header, encode, DecodingKey, EncodingKey, Header, Validation};
 use reqwest;
@@ -70,7 +67,7 @@ async fn get_google_public_keys() -> Result<HashMap<String, DecodingKey>, AppErr
     for jwk in jwks.keys {
         decoding_keys.insert(
             jwk.kid,
-            DecodingKey::from_rsa_components(&jwk.n, &jwk.e).map_err(|e| {
+            DecodingKey::from_rsa_components(&jwk.n, &jwk.e).map_err(|_e| {
                 AppError::Auth(crate::api::errors::AuthError::ConfigError(
                     "Failed to create decoding key".to_string(),
                 ))

@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

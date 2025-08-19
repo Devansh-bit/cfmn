@@ -4,11 +4,11 @@ mod db;
 mod env;
 mod pathutils;
 
-use tower_http::cors::{AllowHeaders, AllowOrigin, Any, CorsLayer};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 use std::net::SocketAddr;
 use axum::extract::DefaultBodyLimit;
-use axum::http::{HeaderName, HeaderValue, Method};
+use axum::http::{HeaderName, Method};
 use clap::Parser;
 use dotenvy::dotenv;
 use tracing_subscriber::prelude::*;

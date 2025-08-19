@@ -5,7 +5,6 @@ use std::{
     path::{self, Path, PathBuf},
 };
 
-use color_eyre::eyre::eyre;
 use url::Url;
 
 #[derive(Clone)]
@@ -25,6 +24,7 @@ pub struct Paths {
     previews_path_slug: PathBuf,
 
     log_location: PathBuf,
+    pub(crate) frontend_build_dir: PathBuf,
 }
 
 impl Default for Paths {
@@ -34,6 +34,7 @@ impl Default for Paths {
         let notes_path_slug = PathBuf::from("notes/uploaded");
         let previews_path_slug = PathBuf::from("notes/previews");
         let log_location = PathBuf::from("./logs");
+        let frontend_build_dir = PathBuf::from("../frontend/dist/");
 
         Self {
             static_files_url: Url::parse("http://localhost:3000")
@@ -44,6 +45,7 @@ impl Default for Paths {
             previews_system_path: static_file_storage_location.join(&previews_path_slug),
             previews_path_slug,
             log_location,
+            frontend_build_dir
         }
     }
 }
@@ -62,6 +64,7 @@ impl Paths {
         static_file_storage_location: &Path,
         notes_relative_path: &Path,
         previews_relative_path: &Path,
+        frontend_build_dir: &Path
     ) -> Result<Self, color_eyre::eyre::Error> {
         let static_files_abs_path = path::absolute(static_file_storage_location)?;
 
@@ -90,6 +93,7 @@ impl Paths {
             previews_system_path,
             previews_path_slug,
             log_location,
+            frontend_build_dir: frontend_build_dir.to_owned(),
         })
     }
 
@@ -137,29 +141,11 @@ impl Paths {
         &self.previews_system_path
     }
 
-    // --- Generic Functions ---
-
-    pub fn get_path_from_slug(&self, slug: &str) -> PathBuf {
-        self.static_files_path.join(slug)
-    }
 
     pub fn get_url_from_slug(&self, slug: &str) -> Result<String, color_eyre::eyre::Error> {
         Ok(self.static_files_url.join(slug)?.as_str().to_string())
     }
 
-    pub fn sanitize_filename(filename: &str) -> String {
-        filename
-            .replace('/', "-")
-            .replace('-', " ")
-            .split_whitespace()
-            .map(|part| {
-                part.chars()
-                    .filter(|&c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
-                    .collect::<String>()
-            })
-            .collect::<Vec<String>>()
-            .join("-")
-    }
 }
 
 #[cfg(test)]

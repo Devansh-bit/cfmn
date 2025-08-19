@@ -12,13 +12,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use chrono::Utc;
-use image::{ImageBuffer, Rgb, RgbImage};
-use pdfium_render::prelude::*;
 use serde::Deserialize;
-use sqlx::Error;
-use tokio::fs;
-use tokio::task;
-use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -85,7 +79,7 @@ pub async fn note_by_id(
                     .paths
                     .get_preview_url(&format!("{}.jpg", note.note_id))
                     .unwrap();
-            ;
+
             let response_note =
                 ResponseNote::from_note_with_user(note, file_url, preview_image_url);
             Ok((StatusCode::OK, Json(response_note).into_response()))
