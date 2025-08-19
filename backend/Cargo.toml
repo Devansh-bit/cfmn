@@ -27,3 +27,7 @@ pdfium-render = { version = "0.8" }
 image = "0.25"
 tracing-appender = "0.2.3"
 
+[dependencies.openssl]
+version = "0.10"
+features = ["vendored"]
+
