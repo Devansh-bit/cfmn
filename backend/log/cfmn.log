@@ -28,3 +28,13 @@
 2025-08-20T12:48:35.865690Z DEBUG sqlx::query: summary="SELECT pg_advisory_unlock($1)" db.statement="" rows_affected=1 rows_returned=1 elapsed=243.243µs elapsed_secs=0.000243243
 2025-08-20T12:48:35.865747Z  INFO backend: Database connection established.
 2025-08-20T12:48:35.866683Z  INFO backend: Server listening on 0.0.0.0:8085
+2025-08-20T12:53:30.709936Z DEBUG sqlx::query: summary="SELECT current_database()" db.statement="" rows_affected=1 rows_returned=1 elapsed=508.241µs elapsed_secs=0.000508241
+2025-08-20T12:53:30.710465Z DEBUG sqlx::query: summary="SELECT pg_advisory_lock($1)" db.statement="" rows_affected=1 rows_returned=1 elapsed=441.242µs elapsed_secs=0.000441242
+2025-08-20T12:53:30.710814Z  INFO sqlx::postgres::notice: relation "_sqlx_migrations" already exists, skipping
+2025-08-20T12:53:30.710843Z DEBUG sqlx::query: summary="CREATE TABLE IF NOT …" db.statement="\n\n\nCREATE TABLE IF NOT EXISTS _sqlx_migrations (\n    version BIGINT PRIMARY KEY,\n    description TEXT NOT NULL,\n    installed_on TIMESTAMPTZ NOT NULL DEFAULT now(),\n    success BOOLEAN NOT NULL,\n    checksum BYTEA NOT NULL,\n    execution_time BIGINT NOT NULL\n);\n                \n" rows_affected=0 rows_returned=0 elapsed=335.034µs elapsed_secs=0.000335034
+2025-08-20T12:53:30.712164Z DEBUG sqlx::query: summary="SELECT version FROM _sqlx_migrations …" db.statement="\n\nSELECT version FROM _sqlx_migrations WHERE success = false ORDER BY version LIMIT 1\n" rows_affected=0 rows_returned=0 elapsed=1.288161ms elapsed_secs=0.001288161
+2025-08-20T12:53:30.712513Z DEBUG sqlx::query: summary="SELECT version, checksum FROM …" db.statement="\n\nSELECT version, checksum FROM _sqlx_migrations ORDER BY version\n" rows_affected=1 rows_returned=1 elapsed=310.161µs elapsed_secs=0.000310161
+2025-08-20T12:53:30.712795Z DEBUG sqlx::query: summary="SELECT current_database()" db.statement="" rows_affected=1 rows_returned=1 elapsed=215.327µs elapsed_secs=0.000215327
+2025-08-20T12:53:30.713079Z DEBUG sqlx::query: summary="SELECT pg_advisory_unlock($1)" db.statement="" rows_affected=1 rows_returned=1 elapsed=241.163µs elapsed_secs=0.000241163
+2025-08-20T12:53:30.713135Z  INFO backend: Database connection established.
+2025-08-20T12:53:30.713965Z  INFO backend: Server listening on 0.0.0.0:8085
