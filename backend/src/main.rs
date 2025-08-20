@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber)?;
 
 
-    let db_wrapper = db::DBPoolWrapper::new().await;
+    let db_wrapper = db::DBPoolWrapper::new(env_vars.clone()).await;
     tracing::info!("Database connection established.");
 
     let cors = CorsLayer::new()

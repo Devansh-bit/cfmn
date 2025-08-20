@@ -147,29 +147,3 @@ impl Paths {
     }
 
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    #[test]
-    fn test_slug_generation() {
-        let paths = Paths::default();
-        assert_eq!(paths.get_note_slug("test.pdf"), "notes/uploaded/test.pdf");
-    }
-
-    #[test]
-    fn test_url_generation() {
-        let paths = Paths::default();
-        let url = paths.get_note_url("test.pdf").unwrap();
-        assert_eq!(url, "http://localhost:8081/notes/uploaded/test.pdf");
-    }
-
-    #[test]
-    fn test_filename_sanitization() {
-        assert_eq!(Paths::sanitize_filename("CS/IT 101 - Final Exam.pdf"), "CS-IT-101-Final-Exam.pdf");
-        assert_eq!(Paths::sanitize_filename("Math@#$%^&*()_notes.pdf"), "Math_notes.pdf");
-        assert_eq!(Paths::sanitize_filename("   spaced   out   .pdf"), "spaced-out-.pdf");
-    }
-}

@@ -2,7 +2,13 @@ FROM node:24-alpine3.21 AS frontend-builder
 
 WORKDIR /app/frontend
 
+# Pass the build arg and set as environment variable
+ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
+# Echo the variable to verify it's set
+RUN echo "VITE_GOOGLE_CLIENT_ID: $VITE_GOOGLE_CLIENT_ID"
+RUN rm -rf ./dist
 
 COPY frontend ./
 RUN npm install
@@ -23,7 +29,7 @@ COPY backend/Cargo.toml backend/Cargo.lock ./
 
 # Copy source code
 COPY backend/src ./src
-COPY backend/metaploy ./metaploy
+COPY metaploy ./metaploy
 COPY backend/.sqlx ./.sqlx
 COPY backend/migrations ./migrations
 
@@ -46,10 +52,12 @@ ENV TZ="Asia/Kolkata"
 WORKDIR /app
 
 # Copy metaploy files
-COPY backend/metaploy ./
+COPY metaploy ./
 
 # Make postinstall script executable
 RUN chmod +x ./postinstall.sh
+
+EXPOSE 8085
 
 # Copy frontend build from the previous stage
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist

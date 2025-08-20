@@ -1,5 +1,6 @@
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
+use crate::env::EnvVars;
 
 #[derive(Clone)]
 pub struct DBPoolWrapper {
@@ -7,8 +8,14 @@ pub struct DBPoolWrapper {
 }
 
 impl DBPoolWrapper {
-    pub async fn new() -> Self {
-        let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    pub async fn new(env_vars: EnvVars) -> Self {
+        let db_url = format!("postgres://{}:{}@{}:{}/{}",
+            env_vars.db_user,
+            env_vars.db_password,
+            env_vars.db_host,
+            env_vars.db_port,
+            env_vars.db_name
+        );
         let connection_pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&db_url)

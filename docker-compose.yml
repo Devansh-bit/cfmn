@@ -1,44 +1,68 @@
+# docker-compose.prod.yml
+# Production configuration for the CFMN backend
+
 services:
   backend:
-    image: exempl4r/cfmn-backend
+    profiles:
+      - prod
+    image: exempl4r/cfmn-backend:latest
     container_name: cfmn_backend
     restart: always
     env_file:
       - ./.env
-    ports:
-      - "8085:8085"
-    volumes:
-      - static-files:/app/static_files
-      - logs:/app/log
     networks:
-      - cfmn-net
+      metaploy-network:
+        aliases:
+          - cfmn_backend
+      metaploy-private-network:
+    volumes:
+      - ./logs:/app/log
+      - nginx-config-volume:/etc/nginx/sites-enabled
+      - odins-vault:/app/static_files
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
-  postgres:
+  postgres-dev:
     image: postgres:16-alpine
-    container_name: cfmn_db_container
-    restart: always
-    env_file:
-      - ./.env
+    container_name: cfmn_dev_db
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_DB: ${DB_USER}
+
+    profiles:
+      - dev
+
     ports:
       - "5432:5432"
     volumes:
+      # This volume persists the database data
       - postgres-data:/var/lib/postgresql/data
+      # This script will run on initialization from the /database directory
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - cfmn-net
-
-volumes:
-  postgres-data:
-    driver: local
-  static-files:
-    driver: local
-  logs:
-    driver: local
+    restart: always
 
 networks:
-  cfmn-net:
-    driver: bridge
+  metaploy-network:
+    external: true
+    name: metaploy-network
+  metaploy-private-network:
+    external: true
+    name: metaploy-private-network
+
+volumes:
+  nginx-config-volume:
+    external: true
+    name: metaploy-nginx-config-volume
+  odins-vault:
+    external: true
+    name: odins-vault
+
+
+
+
+
+
