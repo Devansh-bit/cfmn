@@ -4,6 +4,7 @@ WORKDIR /app/frontend
 
 # Pass the build arg and set as environment variable
 ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_API_BASE_URL=""
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
 # Echo the variable to verify it's set
