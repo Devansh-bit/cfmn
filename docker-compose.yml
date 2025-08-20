@@ -3,14 +3,14 @@ services:
     profiles:
       - prod
     image: exempl4r/cfmn-backend:latest
-    container_name: cfmn_backend
+    container_name: cfmn-backend
     restart: always
     env_file:
       - ./.env
     networks:
       metaploy-network:
         aliases:
-          - cfmn_backend
+          - cfmn-backend
       metaploy-private-network:
     volumes:
       - ./logs:/app/log
@@ -59,9 +59,3 @@ volumes:
   odins-vault:
     external: true
     name: odins-vault
-
-
-
-
-
-
