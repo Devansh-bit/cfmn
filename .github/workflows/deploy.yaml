@@ -111,7 +111,6 @@ jobs:
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
                   passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
                   envs: PROJECT_DIR
-                  script_stop: true
                   script: |
                       cd "${PROJECT_DIR}"
                       sudo docker-compose down
