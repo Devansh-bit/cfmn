@@ -3,7 +3,10 @@ name: Deploy to Github Pages
 on:
   push:
     branches:
-      - master
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-gh-pages.yaml"
 
 jobs:
   build:
