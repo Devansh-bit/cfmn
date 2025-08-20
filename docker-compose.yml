@@ -51,6 +51,8 @@ networks:
     name: metaploy-private-network
 
 volumes:
+  postgres-data:
+    name: postgres-data
   nginx-config-volume:
     external: true
     name: metaploy-nginx-config-volume

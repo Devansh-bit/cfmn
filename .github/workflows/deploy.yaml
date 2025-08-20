@@ -53,67 +53,67 @@ jobs:
                   rm -rf /tmp/.buildx-cache-cfmn-backend
                   mv /tmp/.buildx-cache-cfmn-backend-new /tmp/.buildx-cache-cfmn-backend
 
-#    push:
-#        name: Push Code Stage
-#        needs: dockerhub
-#        runs-on: ubuntu-latest
-#
-#        steps:
-#            - name: Sync local repo with remote repo
-#              uses: appleboy/ssh-action@master
-#              env:
-#                  PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
-#              with:
-#                  host: ${{ secrets.SSH_HOSTNAME }}
-#                  username: ${{ secrets.SSH_USERNAME }}
-#                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-#                  passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
-#                  envs: PROJECT_DIR
-#                  script_stop: true
-#                  script: |
-#                      cd "${PROJECT_DIR}"
-#                      sudo git fetch origin
-#                      sudo git reset --hard origin/main
-#
-#    pull:
-#        name: Pull Image Stage
-#        needs: push
-#        runs-on: ubuntu-latest
-#
-#        steps:
-#            - name: Pull the latest images(s)
-#              uses: appleboy/ssh-action@master
-#              env:
-#                  PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
-#              with:
-#                  host: ${{ secrets.SSH_HOSTNAME }}
-#                  username: ${{ secrets.SSH_USERNAME }}
-#                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-#                  passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
-#                  envs: PROJECT_DIR
-#                  script_stop: true
-#                  script: |
-#                      cd "${PROJECT_DIR}"
-#                      sudo docker compose pull
-#
-#    deploy:
-#        name: Deploy Stage
-#        needs: pull
-#        runs-on: ubuntu-latest
-#
-#        steps:
-#            - name: Deploy the latest build(s)
-#              uses: appleboy/ssh-action@master
-#              env:
-#                  PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
-#              with:
-#                  host: ${{ secrets.SSH_HOSTNAME }}
-#                  username: ${{ secrets.SSH_USERNAME }}
-#                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-#                  passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
-#                  envs: PROJECT_DIR
-#                  script_stop: true
-#                  script: |
-#                      cd "${PROJECT_DIR}"
-#                      sudo docker compose down
-#                      sudo docker compose --profile prod up -d
+    push:
+        name: Push Code Stage
+        needs: dockerhub
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Sync local repo with remote repo
+              uses: appleboy/ssh-action@master
+              env:
+                  PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
+              with:
+                  host: ${{ secrets.SSH_HOSTNAME }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
+                  envs: PROJECT_DIR
+                  script_stop: true
+                  script: |
+                      cd "${PROJECT_DIR}"
+                      sudo git fetch origin
+                      sudo git reset --hard origin/main
+
+    pull:
+        name: Pull Image Stage
+        needs: push
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Pull the latest images(s)
+              uses: appleboy/ssh-action@master
+              env:
+                  PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
+              with:
+                  host: ${{ secrets.SSH_HOSTNAME }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
+                  envs: PROJECT_DIR
+                  script_stop: true
+                  script: |
+                      cd "${PROJECT_DIR}"
+                      sudo docker compose pull
+
+    deploy:
+        name: Deploy Stage
+        needs: pull
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Deploy the latest build(s)
+              uses: appleboy/ssh-action@master
+              env:
+                  PROJECT_DIR: ${{ secrets.PROJECT_DIR }}
+              with:
+                  host: ${{ secrets.SSH_HOSTNAME }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  passphrase: ${{ secrets.SSH_PRIVATE_KEY_PASSPHRASE }}
+                  envs: PROJECT_DIR
+                  script_stop: true
+                  script: |
+                      cd "${PROJECT_DIR}"
+                      sudo docker compose down
+                      sudo docker compose --profile prod up -d
