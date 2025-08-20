@@ -48,9 +48,6 @@ pub struct EnvVars {
     /// Location where logs are stored
     pub log_location: PathBuf,
 
-    #[arg(env, default_value = "./frontend/dist/")]
-    pub frontend_build_dir: PathBuf,
-
     #[arg(skip)]
     /// All paths must be handled using this
     pub paths: Paths,
@@ -64,7 +61,6 @@ impl EnvVars {
             &self.static_file_storage_location,
             &self.uploaded_notes_path,
             &self.previews_path,
-            &*std::path::absolute(&self.frontend_build_dir)?
         )?;
 
         self.log_location = std::path::absolute(self.log_location)?;

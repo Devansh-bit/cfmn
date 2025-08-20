@@ -83,14 +83,9 @@ pub fn create_router(db_wrapper: DBPoolWrapper, env_vars: EnvVars) -> Router {
     // ... rest of your code remains the same
     let notes_path = state.env_vars.paths.get_notes_dir().to_path_buf();
     let images_path = state.env_vars.paths.get_previews_dir().to_path_buf();
-    println!("{}", state.env_vars.paths.frontend_build_dir.join("index.html").to_str().unwrap());
     Router::new()
         .nest("/api", api_router)
         .nest_service("/notes/uploaded", ServeDir::new(notes_path))
         .nest_service("/previews/uploaded", ServeDir::new(images_path))
-        .fallback_service(
-            ServeDir::new(&state.env_vars.paths.frontend_build_dir)
-                .not_found_service(ServeFile::new(&state.env_vars.paths.frontend_build_dir.join("index.html"))),
-        )
         .with_state(state)
 }
