@@ -1,6 +1,3 @@
-# docker-compose.prod.yml
-# Production configuration for the CFMN backend
-
 services:
   backend:
     profiles:

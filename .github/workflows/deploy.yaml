@@ -71,7 +71,7 @@ jobs:
                   envs: PROJECT_DIR
                   script_stop: true
                   script: |
-                      cd "${PROJECT_DIR}/backend/"
+                      cd "${PROJECT_DIR}"
                       sudo git fetch origin
                       sudo git reset --hard origin/main
 
@@ -93,7 +93,7 @@ jobs:
                   envs: PROJECT_DIR
                   script_stop: true
                   script: |
-                      cd "${PROJECT_DIR}/backend/"
+                      cd "${PROJECT_DIR}"
                       sudo docker compose pull
 
     deploy:
@@ -114,6 +114,6 @@ jobs:
                   envs: PROJECT_DIR
                   script_stop: true
                   script: |
-                      cd "${PROJECT_DIR}/backend/"
+                      cd "${PROJECT_DIR}"
                       sudo docker compose down
-                      sudo docker compose up -d
+                      sudo docker compose --profile prod up -d
