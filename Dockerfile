@@ -1,21 +1,3 @@
-FROM node:24-alpine3.21 AS frontend-builder
-
-WORKDIR /app/frontend
-
-# Pass the build arg and set as environment variable
-ARG VITE_GOOGLE_CLIENT_ID
-ENV VITE_API_BASE_URL=""
-ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
-
-# Echo the variable to verify it's set
-RUN echo "VITE_GOOGLE_CLIENT_ID: $VITE_GOOGLE_CLIENT_ID"
-RUN rm -rf ./dist
-
-COPY frontend ./
-RUN npm install
-RUN npm run build
-
-
 FROM rust:slim-bullseye AS builder
 
 # Set the working directory
@@ -61,8 +43,6 @@ RUN chmod +x ./postinstall.sh
 EXPOSE 8085
 
 # Copy frontend build from the previous stage
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/backend .
-ENV FRONTEND_BUILD_DIR=/app/frontend/dist
 
 CMD ["./postinstall.sh", "./backend"]

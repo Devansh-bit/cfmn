@@ -24,7 +24,6 @@ pub struct Paths {
     previews_path_slug: PathBuf,
 
     log_location: PathBuf,
-    pub(crate) frontend_build_dir: PathBuf,
 }
 
 impl Default for Paths {
@@ -34,7 +33,6 @@ impl Default for Paths {
         let notes_path_slug = PathBuf::from("notes/uploaded");
         let previews_path_slug = PathBuf::from("notes/previews");
         let log_location = PathBuf::from("./logs");
-        let frontend_build_dir = PathBuf::from("../frontend/dist/");
 
         Self {
             static_files_url: Url::parse("http://localhost:3000")
@@ -45,7 +43,6 @@ impl Default for Paths {
             previews_system_path: static_file_storage_location.join(&previews_path_slug),
             previews_path_slug,
             log_location,
-            frontend_build_dir
         }
     }
 }
@@ -64,7 +61,6 @@ impl Paths {
         static_file_storage_location: &Path,
         notes_relative_path: &Path,
         previews_relative_path: &Path,
-        frontend_build_dir: &Path
     ) -> Result<Self, color_eyre::eyre::Error> {
         let static_files_abs_path = path::absolute(static_file_storage_location)?;
 
@@ -93,7 +89,6 @@ impl Paths {
             previews_system_path,
             previews_path_slug,
             log_location,
-            frontend_build_dir: frontend_build_dir.to_owned(),
         })
     }
 

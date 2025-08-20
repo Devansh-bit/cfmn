@@ -45,7 +45,7 @@ interface GoogleButtonConfig {
     text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
     shape?: 'rectangular' | 'pill' | 'circle' | 'square';
     logo_alignment?: 'left' | 'center';
-    width?: string;
+    width?: number;
     locale?: string;
 }
 
@@ -121,58 +121,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     // Initialize Google OAuth and One Tap
     useEffect(() => {
         let isMounted = true;
-        let scriptCleanup: (() => void) | null = null;
+        let initTimeout: NodeJS.Timeout | null = null;
 
         const initializeGoogleAuth = () => {
-            if (window.google && GOOGLE_CLIENT_ID && !googleInitialized && isMounted) {
-                try {
-                    console.log('Initializing Google Auth with client ID:', GOOGLE_CLIENT_ID);
+            if (!window.google?.accounts?.id) {
+                console.log('Google accounts.id not available yet');
+                return false;
+            }
 
-                    window.google.accounts.id.initialize({
-                        client_id: GOOGLE_CLIENT_ID,
-                        callback: handleCredentialResponse,
-                        auto_select: oneTapAutoSelect,
-                        cancel_on_tap_outside: oneTapCancelOnTapOutside,
-                        use_fedcm_for_prompt: false,
-                        ux_mode: 'popup',
-                        context: 'signin',
-                        // One Tap specific configurations
-                        itp_support: true,
-                        state_cookie_domain: window.location.hostname,
-                    });
+            if (!GOOGLE_CLIENT_ID) {
+                console.error('GOOGLE_CLIENT_ID not configured');
+                return false;
+            }
 
-                    if (isMounted) {
-                        setGoogleInitialized(true);
-                        window.googleAuthReady = true;
-                        console.log('Google Auth initialized successfully');
-                        window.dispatchEvent(new CustomEvent('googleAuthReady'));
-                    }
-                } catch (error) {
-                    console.error('Failed to initialize Google Auth:', error instanceof Error ? error.message : String(error));
+            if (googleInitialized) {
+                console.log('Google Auth already initialized');
+                return true;
+            }
+
+            try {
+                console.log('Initializing Google Auth with client ID:', GOOGLE_CLIENT_ID);
+
+                window.google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse,
+                    auto_select: oneTapAutoSelect,
+                    cancel_on_tap_outside: oneTapCancelOnTapOutside,
+                    use_fedcm_for_prompt: false,
+                    ux_mode: 'popup',
+                    context: 'signin',
+                    // One Tap specific configurations
+                    itp_support: true,
+                    state_cookie_domain: window.location.hostname,
+                });
+
+                if (isMounted) {
+                    setGoogleInitialized(true);
+                    window.googleAuthReady = true;
+                    console.log('Google Auth initialized successfully');
+                    window.dispatchEvent(new CustomEvent('googleAuthReady'));
                 }
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize Google Auth:', error instanceof Error ? error.message : String(error));
+                return false;
             }
         };
 
-        // Check if Google script is already loaded
-        if (window.google && window.googleAuthReady) {
-            setGoogleScriptLoaded(true);
-            if (!googleInitialized) {
-                initializeGoogleAuth();
-            }
-            return;
-        }
-
         const loadGoogleScript = () => {
-            if (!isMounted) return null;
+            if (!isMounted) return;
+
+            // Check if script is already loaded and Google API is available
+            if (window.google?.accounts?.id) {
+                console.log('Google API already available');
+                setGoogleScriptLoaded(true);
+                // Try to initialize immediately
+                if (!initializeGoogleAuth()) {
+                    // If immediate initialization fails, retry after a short delay
+                    initTimeout = setTimeout(() => {
+                        if (isMounted) {
+                            initializeGoogleAuth();
+                        }
+                    }, 100);
+                }
+                return;
+            }
 
             const existingScript = document.querySelector('script[src*="gsi/client"]');
             if (existingScript) {
-                console.log('Google script already loaded');
-                if (isMounted) {
-                    setGoogleScriptLoaded(true);
-                    initializeGoogleAuth();
+                console.log('Google script element exists, but API not ready. Removing and reloading...');
+                // Remove existing script and reload fresh
+                existingScript.remove();
+                // Clear any Google global state
+                if (window.google) {
+                    delete window.google;
                 }
-                return null;
+                if (window.googleAuthReady) {
+                    delete window.googleAuthReady;
+                }
+                // Fall through to load fresh script
             }
 
             console.log('Loading Google Identity Services script');
@@ -185,7 +212,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
                 console.log('Google script loaded successfully');
                 if (isMounted) {
                     setGoogleScriptLoaded(true);
-                    setTimeout(() => {
+                    // Wait a bit for the API to be fully available
+                    initTimeout = setTimeout(() => {
                         if (isMounted) {
                             initializeGoogleAuth();
                         }
@@ -201,31 +229,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
             };
 
             document.head.appendChild(script);
-
-            return () => {
-                if (document.readyState === 'complete' && !isMounted) {
-                    try {
-                        const scriptToRemove = document.querySelector('script[src*="gsi/client"]');
-                        if (scriptToRemove && scriptToRemove.parentNode) {
-                            scriptToRemove.parentNode.removeChild(scriptToRemove);
-                        }
-                        window.googleAuthReady = false;
-                    } catch (error) {
-                        console.warn('Failed to cleanup Google script:', error instanceof Error ? error.message : String(error));
-                    }
-                }
-            };
         };
 
-        scriptCleanup = loadGoogleScript();
+        loadGoogleScript();
 
         return () => {
             isMounted = false;
-            if (scriptCleanup) {
-                scriptCleanup();
+            if (initTimeout) {
+                clearTimeout(initTimeout);
             }
         };
-    }, [googleInitialized, oneTapAutoSelect, oneTapCancelOnTapOutside]);
+    }, []); // Remove dependencies to avoid re-initialization
 
     // Trigger One Tap when conditions are met
     useEffect(() => {
@@ -290,7 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     };
 
     const showOneTap = () => {
-        if (!window.google || !googleInitialized) {
+        if (!window.google?.accounts?.id || !googleInitialized) {
             console.warn('Google Auth not initialized, cannot show One Tap');
             return;
         }
@@ -412,7 +426,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
             setOneTapDisplayed(false);
             setOneTapDismissed(false);
 
-            if (window.google && googleInitialized) {
+            if (window.google?.accounts?.id && googleInitialized) {
                 window.google.accounts.id.disableAutoSelect();
             }
 
@@ -438,7 +452,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
 
     // Method to cancel One Tap
     const cancelOneTap = (): void => {
-        if (window.google && googleInitialized) {
+        if (window.google?.accounts?.id && googleInitialized) {
             window.google.accounts.id.cancel();
             setOneTapDisplayed(false);
             setOneTapDismissed(true);

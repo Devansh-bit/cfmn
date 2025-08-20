@@ -1,12 +1,10 @@
 services:
   backend:
-    profiles:
-      - prod
     image: exempl4r/cfmn-backend:latest
     container_name: cfmn-backend
     restart: always
     env_file:
-      - ./.env
+      - .production.env
     networks:
       metaploy-network:
         aliases:
@@ -21,26 +19,6 @@ services:
       options:
         max-size: "100m"
         max-file: "3"
-
-  postgres-dev:
-    image: postgres:16-alpine
-    container_name: cfmn_dev_db
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_USER}
-
-    profiles:
-      - dev
-
-    ports:
-      - "5432:5432"
-    volumes:
-      # This volume persists the database data
-      - postgres-data:/var/lib/postgresql/data
-      # This script will run on initialization from the /database directory
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: always
 
 networks:
   metaploy-network:

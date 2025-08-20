@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import CourseGrid from './components/CourseGrid';
-import Footer from './components/Footer';
 import { notesApi } from './api/notesApi';
 import type { ResponseNote } from './types';
 
@@ -83,7 +82,6 @@ const AppContent: React.FC = () => {
                     )}
                 </main>
 
-                <Footer />
             </AuthProvider>
         </div>
     );
