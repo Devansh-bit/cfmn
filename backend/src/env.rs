@@ -6,8 +6,6 @@ use crate::pathutils::Paths;
 #[clap(name = "")]
 pub struct EnvVars {
     #[arg(env)]
-    pub database_url: String,
-    #[arg(env)]
     pub google_client_id: String,
     #[arg(env)]
     pub signing_secret: String,
@@ -18,7 +16,7 @@ pub struct EnvVars {
 
     #[arg(env)]
     pub port: u16,
-    
+
     // Database
     #[arg(env)]
     pub db_name: String,
